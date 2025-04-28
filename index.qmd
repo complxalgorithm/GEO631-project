@@ -1286,8 +1286,12 @@ ranef_map
 
 A variance of 8.71 and standard deviation of 2.951 in the random effects shows a high level of between-group variability, which suggests that unobserved block group-level factors play a large role in predicting distress in this model. It was thus justified to include the random intercepts as a well to account for this heterogeneity.
 
-The map highlights spatial variation in unexplained distress risk across block groups. Several areas exhibit significantly higher baseline distress risk (in red) even after controlling for socioeconomic, demographic, and built environment predictors. This suggests the presence of unmeasured local factors contributing to persistent distress. Conversely, pockets of lower-than-expected risk (in blue) indicate potential resilience factors that buffer against socioeconomic vulnerabilities. These spatial patterns warrant further investigation to identify contextual drivers of distress beyond those captured in the current model.
+The map highlights spatial variation in unexplained distress risk across block groups. Several areas of the Southern Tier exhibit significantly higher baseline distress risk (in red) even after controlling for socioeconomic, demographic, and built environment predictors. This suggests the presence of unmeasured local factors contributing to persistent distress. Conversely, pockets of lower-than-expected risk (in blue) indicate potential resilience factors that buffer against socioeconomic vulnerabilities. These spatial patterns warrant further investigation to identify contextual drivers of distress beyond those captured in the current model.
 
+
+PUT CITY NAMES ON MAP AS WELL AS COUNTY BOUNDARIES
+
+EXPAND A BIT MORE HERE
 
 
 # Discussion and Conclusions
@@ -1314,57 +1318,57 @@ Other distressed classification systems (<https://www.congress.gov/crs-product/I
 
 3. Barrett, M., Aslebagh, S., Vuong, V., et al. (2023). Spatially resolved air pollution models identify disparities in exposure by socioeconomic status. *European Respiratory Journal*, *62*(67). <https://doi.org/10.1183/13993003.congress-2023.PA1608>
 
-3. Bivand, R. S., & Piras, G. (2015). Comparing implementations of estimation methods for spatial econometrics. Journal of Statistical Software, *63*(18), 1–36. <https://doi.org/10.18637/jss.v063.i18>
+4. Bivand, R. S., & Piras, G. (2015). Comparing implementations of estimation methods for spatial econometrics. Journal of Statistical Software, *63*(18), 1–36. <https://doi.org/10.18637/jss.v063.i18>
 
-4. Brooks M.E., Kristensen K., van Benthem K.J., et al. (2017). glmmTMB Balances Speed and Flexibility Among Packages for Zero-inflated Generalized Linear Mixed Modeling. *The R Journal*, *9*(2), 378–400. <https://doi.org/doi:10.32614/RJ-2017-066>.
+5. Brooks M.E., Kristensen K., van Benthem K.J., et al. (2017). glmmTMB Balances Speed and Flexibility Among Packages for Zero-inflated Generalized Linear Mixed Modeling. *The R Journal*, *9*(2), 378–400. <https://doi.org/doi:10.32614/RJ-2017-066>.
 
-5. Dormann, C. F., McPherson, J. M., Araújo, M. B., et al. (2007). Methods to account for spatial autocorrelation in the analysis of species distributional data: A review. *Ecography*, *30*(5), 609–628. <https://doi.org/10.1111/j.2007.0906-7590.05171.x>
+6. Dormann, C. F., McPherson, J. M., Araújo, M. B., et al. (2007). Methods to account for spatial autocorrelation in the analysis of species distributional data: A review. *Ecography*, *30*(5), 609–628. <https://doi.org/10.1111/j.2007.0906-7590.05171.x>
 
-6. Ellis, G.F., Burk, D., Roberts, F. (2025). ipumsr: An R Interface for Downloading, Reading, and Handling IPUMS Data. R package version 0.8.2, <https://github.com/ipums/ipumsr>, <https://www.ipums.org>, <https://tech.popdata.org/ipumsr/>. 
+7. Ellis, G.F., Burk, D., Roberts, F. (2025). ipumsr: An R Interface for Downloading, Reading, and Handling IPUMS Data. R package version 0.8.2, <https://github.com/ipums/ipumsr>, <https://www.ipums.org>, <https://tech.popdata.org/ipumsr/>. 
 
-7. Flowerdew, R., & Green, M. (1992). Developments in areal interpolation methods and GIS. The Annals of Regional Science, 26(1), 67–78. <https://doi.org/10.1007/BF01581870>
+8. Flowerdew, R., & Green, M. (1992). Developments in areal interpolation methods and GIS. The Annals of Regional Science, 26(1), 67–78. <https://doi.org/10.1007/BF01581870>
 
-8. Galili, T., O'Callaghan, A., Sidi, J., & Sievert, C. (2017). heatmaply: an R package for creating interactive cluster heatmaps for online publishing. *Bioinformatics*, *34*(9), 1600-1602. <https://doi.org/10.1093/bioinformatics/btx657>
+9. Galili, T., O'Callaghan, A., Sidi, J., & Sievert, C. (2017). heatmaply: an R package for creating interactive cluster heatmaps for online publishing. *Bioinformatics*, *34*(9), 1600-1602. <https://doi.org/10.1093/bioinformatics/btx657>
 
-9. Gelman, A. & Hill, J. (2007). Data Analysis Using Regression and Multilevel/Hierarchical Models. Cambridge University Press. https://doi.org/10.1017/CBO9780511790942
+10. Gelman, A. & Hill, J. (2007). Data Analysis Using Regression and Multilevel/Hierarchical Models. Cambridge University Press. https://doi.org/10.1017/CBO9780511790942
 
-9. Goodchild, M. F., & Lam, N. S. (1980). Areal interpolation: A variant of the traditional spatial problem. *Geo-Processing*, *1*(3), 297-312.
+11. Goodchild, M. F., & Lam, N. S. (1980). Areal interpolation: A variant of the traditional spatial problem. *Geo-Processing*, *1*(3), 297-312.
 
-10. Gregory, I. N. (2002). The accuracy of areal interpolation techniques: standardising the crosswalk. *Computers, Environment and Urban Systems*, *26*(3), 293-314.
+12. Gregory, I. N. (2002). The accuracy of areal interpolation techniques: standardising the crosswalk. *Computers, Environment and Urban Systems*, *26*(3), 293-314.
 
-11. Hallisey, E., Tai, E., Berens, A., et al. (2017). Transforming geographic scale: a comparison of combined population and areal weighting to other interpoaltion methods. *International Journal of Health Geographics*, *16*(29). <https://doi.org/10.1186/s12942-017-0102-z>
+13. Hallisey, E., Tai, E., Berens, A., et al. (2017). Transforming geographic scale: a comparison of combined population and areal weighting to other interpoaltion methods. *International Journal of Health Geographics*, *16*(29). <https://doi.org/10.1186/s12942-017-0102-z>
 
-12. Hartig, F. (2024). DHARMa: Residual Diagnostics for Hierarchical (Multi-Level / Mixed) Regression Models. R package version 0.4.7, <https://github.com/florianhartig/dharma>.
+14. Hartig, F. (2024). DHARMa: Residual Diagnostics for Hierarchical (Multi-Level / Mixed) Regression Models. R package version 0.4.7, <https://github.com/florianhartig/dharma>.
 
-13. Hijmans, R. (2025). terra: Spatial Data Analysis. R package version 1.8-6. <https://github.com/rspatial/terra>
+15. Hijmans, R. (2025). terra: Spatial Data Analysis. R package version 1.8-6. <https://github.com/rspatial/terra>
 
-14. Johnson, K. M., & Lichter, D. T. (2019). Rural depopulation: Growth and decline processes over the past century. Rural Sociology, 84(1), 3–27. <https://doi.org/10.1111/ruso.12266>
+16. Johnson, K. M., & Lichter, D. T. (2019). Rural depopulation: Growth and decline processes over the past century. Rural Sociology, 84(1), 3–27. <https://doi.org/10.1111/ruso.12266>
 
-15. Jokela, M., Batty, G. D., Vahtera, J., Elovainio, M., & Kivimäki, M. (2013).
+17. Jokela, M., Batty, G. D., Vahtera, J., Elovainio, M., & Kivimäki, M. (2013).
 Socioeconomic inequalities in common mental disorders and psychotherapy treatment in the UK between 1991 and 2009. The British Journal of Psychiatry, 202(2), 115–120. <https://doi.org/10.1192/bjp.bp.111.098863>
 
-14. K C, S., Gyawali, B. R., Lucas, S., Antonious, G. F., Chiluwal, A., & Zourarakis, D. (2024). Assessing Land-Cover Change Trends, Patterns, and Transitions in Coalfield Counties of Eastern Kentucky, USA. *Land*, *13*(9), 1541. <https://doi.org/10.3390/land13091541>
+18. K C, S., Gyawali, B. R., Lucas, S., Antonious, G. F., Chiluwal, A., & Zourarakis, D. (2024). Assessing Land-Cover Change Trends, Patterns, and Transitions in Coalfield Counties of Eastern Kentucky, USA. *Land*, *13*(9), 1541. <https://doi.org/10.3390/land13091541>
 
-15. Ludke, R. L., Obermiller, P. J., & Rademacher, E. W. (2012). Demographic Change in Appalachia: A Tentative Analysis. *Journal of Appalachian Studies*, *18*(1/2), 48–92. <http://www.jstor.org/stable/23337708>
+19. Ludke, R. L., Obermiller, P. J., & Rademacher, E. W. (2012). Demographic Change in Appalachia: A Tentative Analysis. *Journal of Appalachian Studies*, *18*(1/2), 48–92. <http://www.jstor.org/stable/23337708>
 
-16. Manson, S., Schroeder, J., Van Riper, D., et al. (2024). IPUMS National Historical Geographic Information System: Version 19.0 [dataset]. Minneapolis, MN: IPUMS. <http://doi.org/10.18128/D050.V19.0>.
+20. Manson, S., Schroeder, J., Van Riper, D., et al. (2024). IPUMS National Historical Geographic Information System: Version 19.0 [dataset]. Minneapolis, MN: IPUMS. <http://doi.org/10.18128/D050.V19.0>.
 
-17. McMahon, E.J. (2024). Eight in 10 New York towns and cities have lost population since 2020. *Empire Center*. <https://www.empirecenter.org/publications/eight-in-10-new-york-towns-and-cities-have-lost-population-since-2020>
+21. McMahon, E.J. (2024). Eight in 10 New York towns and cities have lost population since 2020. *Empire Center*. <https://www.empirecenter.org/publications/eight-in-10-new-york-towns-and-cities-have-lost-population-since-2020>
 
-18. Partridge, M. D., Rickman, D. S., Ali, K., & Olfert, M. R. (2008).
+22. Partridge, M. D., Rickman, D. S., Ali, K., & Olfert, M. R. (2008).
 Lost in space: Population growth in the American hinterlands and small cities.
 Journal of Economic Geography, 8(6), 727–757.
 <https://doi.org/10.1093/jeg/lbn038>
 
-18. Thiede, B. C., Lichter, D. T., & Slack, T. (2018). Working, but poor: The good life in rural America? Journal of Rural Studies, 59, 183–193. <https://doi.org/10.1016/j.jrurstud.2016.02.007>
+23. Thiede, B. C., Lichter, D. T., & Slack, T. (2018). Working, but poor: The good life in rural America? Journal of Rural Studies, 59, 183–193. <https://doi.org/10.1016/j.jrurstud.2016.02.007>
 
-18. U.S. Geological Survey. (2024). Annual National Land Cover Database (NLCD) Collection 1 Science Products (2008–2023) [Data set]. Multi-Resolution Land Characteristics Consortium (MRLC). <https://www.mrlc.gov/sites/default/files/docs/LSDS-2103%20Annual%20National%20Land%20Cover%20Database%20%28NLCD%29%20Collection%201%20Science%20Product%20User%20Guide%20-v1.0%202024_10_15.pdf>
+24. U.S. Geological Survey. (2024). Annual National Land Cover Database (NLCD) Collection 1 Science Products (2008–2023) [Data set]. Multi-Resolution Land Characteristics Consortium (MRLC). <https://www.mrlc.gov/sites/default/files/docs/LSDS-2103%20Annual%20National%20Land%20Cover%20Database%20%28NLCD%29%20Collection%201%20Science%20Product%20User%20Guide%20-v1.0%202024_10_15.pdf>
 
-19. Walker, K. (2023). "7.3 Small area time-series analysis," in *Analyzing US Census Data: Methods, Maps, and Models in R*. CRC Press: Boca Raton, Florida, <https://walker-data.com/census-r/spatial-analysis-with-us-census-data.html#small-area-time-series-analysis>
+25. Walker, K. (2023). "7.3 Small area time-series analysis," in *Analyzing US Census Data: Methods, Maps, and Models in R*. CRC Press: Boca Raton, Florida, <https://walker-data.com/census-r/spatial-analysis-with-us-census-data.html#small-area-time-series-analysis>
 
-20. Walker, K. & Herman, M. (2024). tidycensus: Load US Census Boundary and Attribute Data as 'tidyverse' and 'sf'-Ready Data Frames. R package version 1.6.6. <https://walker-data.com/tidycensus>
+26. Walker, K. & Herman, M. (2024). tidycensus: Load US Census Boundary and Attribute Data as 'tidyverse' and 'sf'-Ready Data Frames. R package version 1.6.6. <https://walker-data.com/tidycensus>
 
-21. Zuur, A. F., Ieno, E. N., Walker, N. J., Saveliev, A. A., & Smith, G. M. (2009). Mixed Effects Models and Extensions in Ecology with R. Springer Science & Business Media. <https://doi.org/10.1007/978-0-387-87458-6>
+27. Zuur, A. F., Ieno, E. N., Walker, N. J., Saveliev, A. A., & Smith, G. M. (2009). Mixed Effects Models and Extensions in Ecology with R. Springer Science & Business Media. <https://doi.org/10.1007/978-0-387-87458-6>
 
 ## Data Sources and Methodology
 
