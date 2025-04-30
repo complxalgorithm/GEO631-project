@@ -20,7 +20,7 @@ execute:
 
 # Introduction
 
-The Southern Tier of New York, comprising fourteen counties designated as part of Northern Appalachia by the Appalachian Regional Commissiono (ARC), has long faced significant socioeconomic challenges. These counties have experiences some of the steepest population declines in New York State outside of New York City, driven by prolonged economic restructuring and out-migration (McMahon, 2024; Johnson & Lichter, 2019). Historically reliant on manufacturing, agriculture, and extractive industries, the region has struggled to adapt to post-industrial economic realities. As a result, many communities across the Southern Tier endure persistently high poverty rates and low median incomes relative to national benchmarks (ARC, 2023).
+The Southern Tier of New York, comprising fourteen counties designated as part of Northern Appalachia by the Appalachian Regional Commission (ARC), has long faced significant socioeconomic challenges. These counties have experienced some of the steepest population declines in New York State outside of New York City, driven by prolonged economic restructuring and out-migration (McMahon, 2024; Johnson & Lichter, 2019). Historically reliant on manufacturing, agriculture, and extractive industries, the region has struggled to adapt to post-industrial economic realities. As a result, many communities across the Southern Tier endure persistently high poverty rates and low median incomes relative to national benchmarks (ARC, 2023).
 
 ![Map of three subregions in Appalachian NY (NY Department of State)](https://dos.ny.gov/sites/g/files/oee926/files/styles/wysiwyg/public/media/2021/04/arc-map-.png?itok=Jf3ZpQA9){fig-alt="Map of three subregions of the New York Southern Tier region."}
 
@@ -94,10 +94,6 @@ library(car)
 library(glmmTMB)
 library(DHARMa)
 library(spdep)
-#library(sjPlot)
-#library(ggeffects)
-#library(emmeans)
-#library(performance)
 library(tidyterra)
 library(cowplot)
 library(ggspatial)
@@ -901,7 +897,7 @@ model_glmm <- glmmTMB(
 
 The model can be expressed in mathematical terms as:
 
-![Distress presence predictive logit mixed-effects model](imgs/mode_equation.png){fig-alt="Distress presence predictive logit mixed-effects model."}
+![Distress presence predictive logit mixed-effects model](imgs/model_equation.png){fig-alt="Distress presence predictive logit mixed-effects model."}
 
 Where:
 * β~0~: fixed intercept
@@ -982,7 +978,7 @@ Overall, the model fits well, the random effects have a reasonable distribution,
 
 ```{r fixed_effects, message=F, warning=F, cache=T}
 # display summary of model
-summary(model_glmm)
+#summary(model_glmm)
 
 # extract fixed effects
 fixef_vals <- fixef(model_glmm)$cond
@@ -1163,7 +1159,9 @@ ranef_map <-
     title = 'Unexplained Distress Risk by Block Group',
     subtitle = 'Baseline Distress Risk After Controlling for Predictors'
   ) +
-  theme_map()
+  theme_map() +
+  theme(legend.position = 'bottom') +
+  guides(fill = guide_legend(nrow = 1))
 
 ranef_map
 ```

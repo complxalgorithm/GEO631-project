@@ -2,6 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
+.rmarkdown
 index_cache/
 index_files/
 data/*
