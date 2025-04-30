@@ -89,7 +89,7 @@ interpolate_data <- function(yr) {
       across(tot_pop:pop_over_16_didnt_work, ~ as.numeric(.))
     ) %>%
     relocate(year, .after = GEOID) %>%
-    st_transform(crs = st_crs(st_tracts)) %>%
+    st_transform(crs = st_crs(study_bgs)) %>%
     st_make_valid()
   
   # fill null values
@@ -129,7 +129,7 @@ decode_transition <- function(class) {
   paste(old_label, '→', new_label)
 }
 
-# 
+# define get_region function:
 get_region <- function(county) {
   for(region in names(st_regions)) {
     if (county %in% st_regions[[region]]) {

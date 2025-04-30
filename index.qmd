@@ -74,8 +74,8 @@ The [tidyverse](https://www.tidyverse.org/) collection of packages was primarily
 # Data Gathering and Processing
 
 ```{r libraries, message=F, warning=F}
-devtools::install_github("yutannihilation/ggsflabel")
-library(ggsflabel)
+#devtools::install_github("yutannihilation/ggsflabel")
+#library(ggsflabel)
 
 # load necessary libraries
 library(tidyverse)
@@ -98,7 +98,7 @@ library(spdep)
 #library(ggeffects)
 #library(emmeans)
 #library(performance)
-#library(tidyterra)
+library(tidyterra)
 library(cowplot)
 library(ggspatial)
 library(gt)
@@ -144,20 +144,28 @@ southern_tier_counties = c('Allegany', 'Broome', 'Cattaraugus', 'Chautauqua',
 # get study geographies, city and town boundaries, and basemap focused on ny state
 ny_state <- states(cb = TRUE, year = 2020) %>% filter(NAME == 'New York')
 
-st_regions <- list(
-  'West Region' = c('Chautauqua', 'Cattaraugus', 'Allegany'),
-  'Central Region' = c('Steuben', 'Schuyler', 'Chemung'),
-  '8 Region' = c('Tompkins', 'Cortland', 'Tioga', 'Chenango',
-                 'Broome', 'Otsego', 'Schoharie', 'Delaware')
+# list of county FIPS
+county_fips <- c(
+  "003", "007", "009", "013", "015", "017", "023", 
+  "025", "077", "095", "097", "101", "107", "109"
 )
 
-study_counties <- counties(state = 'NY', cb = TRUE, year = 2020) %>%
+# get southern tier county boundaries
+study_counties <- 
+  counties(state = 'NY', cb = TRUE, year = 2020) %>%
   filter(NAME %in% southern_tier_counties)
 
-study_tracts <- tracts(state = 'NY', county = southern_tier_counties, cb = TRUE, year = 2020)
+# get block groups in southern tier
+study_bgs <- 
+  block_groups(state = 'NY', year = 2020) %>%
+  filter(COUNTYFP %in% county_fips)
 
+# study_tracts <- tracts(state = 'NY', county = southern_tier_counties, cb = TRUE, year = 2020)
+
+# get basemap of NY
 base_ny <- basemap_raster(ext = ny_state, map_service = 'carto', map_type = 'light')
 
+# get villages and cities
 st_civil <- 
   st_read('data/boundaries/NYS_Civil_Boundaries.geojson') %>%
   filter(COUNTY %in% southern_tier_counties) %>%
@@ -168,10 +176,10 @@ st_cities <-
   filter(COUNTY %in% southern_tier_counties) %>%
   st_transform(crs = 26918)
 
-st_towns <-
-  st_read('data/boundaries/NYS_Town_Boundaries.geojson') %>%
-  filter(COUNTY %in% southern_tier_counties) %>%
-  st_transform(crs = 26918)
+# st_towns <-
+#   st_read('data/boundaries/NYS_Town_Boundaries.geojson') %>%
+#   filter(COUNTY %in% southern_tier_counties) %>%
+#   st_transform(crs = 26918)
 
 # create study area map
 study_area_map <-
@@ -179,7 +187,7 @@ study_area_map <-
   addTiles() %>%
   addPolygons(data = st_transform(study_counties, crs = '+proj=longlat +datum=WGS84'),
               fillOpacity = 0, label = ~study_counties$NAME) %>%
-  addPolygons(data = st_transform(study_tracts, crs = '+proj=longlat +datum=WGS84'),
+  addPolygons(data = st_transform(study_bgs, crs = '+proj=longlat +datum=WGS84'),
               fillOpacity = 0, color = 'black', weight = '0.75')
 
 study_area_map
@@ -325,7 +333,7 @@ for (yr in 2009:2023) {
   # load shapefile
   s <- read_ipums_sf(nhgis_bg_shps, file_select = matches(as.character(yr)))
   
-  # 
+  # 2009
   if (yr == 2009) {
     d <- 
       d %>%
@@ -478,34 +486,9 @@ st_bgs[is.na(st_bgs)] <- 0
 
 ```
 
-```{r distress_vars_plot, message = FALSE, warning = FALSE, cache = TRUE, results = FALSE}
-# create scatter plot for each year of avg family income and pct below poverty
-distressed_vars_plt <-
-  st_bgs %>%
-  st_drop_geometry() %>%
-  group_by(GEOID) %>%
-  summarize(tot_families = sum(tot_families),
-            agg_fam_income = sum(agg_fam_income),
-            tot_pop_pov_count = sum(tot_pop_pov_count),
-            pop_in_poverty = sum(pop_in_poverty),
-            avg_fam_income = agg_fam_income / tot_families,
-            pct_below_poverty = pop_in_poverty / tot_pop_pov_count) %>%
-  ggplot() +
-    geom_point(aes(x = avg_fam_income, y = pct_below_poverty, color = factor(county))) +
-    scale_x_log10()
-
-distressed_vars_plt
-```
-
 ### Population-Weighted Areal Interpolation and Distressed Status Determination
 
 ```{r pw_areal_interpolation, message=F, warning=F, cache=T}
-# list of county FIPS
-county_fips <- c(
-  "003", "007", "009", "013", "015", "017", "023", 
-  "025", "077", "095", "097", "101", "107", "109"
-)
-
 # isolate post-2020 block group data
 st_bgs.post_2020 <- 
   st_bgs %>%
@@ -619,11 +602,11 @@ names(nlcd_urls) <- lc_yrs
 nlcd_wrapped <- lapply(lc_yrs, function(yr) {
   # crop and mask each raster, then project it to NAD83
   
-  print(paste('Processing NLCD for', as.character(yr)))
+  #print(paste('Processing NLCD for', as.character(yr)))
   
   # get path to file
   # YOU MAY HAVE TO ADD .tif AS THE EXTENSION OF THE RASTER FILE
-  lc_rast <- paste(mrlc_data_dir, paste('nlcd_', as.character(year), sep = ''), sep = '')
+  lc_rast <- paste(mrlc_data_dir, paste('nlcd_', as.character(yr), sep = ''), sep = '')
   
   # catch errors in processing the raster
   tryCatch({
@@ -633,7 +616,7 @@ nlcd_wrapped <- lapply(lc_yrs, function(yr) {
     r_mask <- terra::mask(r_crop, vect(st_transform(st_full_study_area, crs = st_crs(r))))
     
     # add year as name of masked raster
-    names(r_mask) <- paste('NLCD_', as.character(year), sep = '')
+    names(r_mask) <- paste('NLCD_', as.character(yr), sep = '')
     
     # return wrapped, masked raster
     return(
@@ -724,7 +707,7 @@ plan(multisession, workers = 2)
 # in square miles over the entire study area for each year (2008-2023)
 # have to also include 2008 due to 
 zonal_stats <- future_lapply(lc_yrs, function(yr) {
-  print(paste('Calculating zonal statistics for', as.character(yr)))
+  #print(paste('Calculating zonal statistics for', as.character(yr)))
   
   # get tract boundaries, then project
   bgs_yr <- if (yr == 2008) {
@@ -833,112 +816,6 @@ st_bgs_all <-
 
 # Results
 
-```{r county_distressed_analysis, message=F, warning=F, cache=T, results = FA:SE}
-# calculate county-level data
-st_counties <-
-  st_bgs_all %>%
-  st_drop_geometry %>%
-  filter(year %in% c(2009, 2023)) %>%
-  .[,-grep('pct|avg|rate|density', colnames(.))] %>%
-  group_by(county, year) %>%
-  summarize(
-    across(c(tot_pop:agg_income, ends_with('sqmi')), ~ sum(.)),
-    num_block_groups = n(),
-    num_distressed_block_groups = sum(is_distressed == 1),
-    num_non_distressed_block_groups = sum(is_distressed == 0)
-  ) %>%
-  mutate(
-    pct_below_poverty = tot_pop_pov_count / pop_in_poverty,
-    avg_family_income = agg_fam_income / tot_families,
-    per_capita_income = agg_income / tot_pop,
-    avg_rent = agg_gross_rent / renter_occ_housing_units,
-    pct_pop_over_16_didnt_work = pop_over_16_didnt_work / pop_over_16,
-    pct_family_hhs = tot_families / tot_hhs,
-    hu_vacancy_rate = vacant_housing_units / tot_housing_units,
-    pct_renter_occupied_housing_units = renter_occ_housing_units / tot_housing_units,
-    pct_agriculture = Agriculture_area_sqmi / area_sqmi,
-    pct_barren = `Barren Land_area_sqmi` / area_sqmi,
-    pct_developed = Developed_area_sqmi / area_sqmi,
-    pct_forest = Forest_area_sqmi / area_sqmi,
-    pct_grassland = Grassland_area_sqmi / area_sqmi,
-    pct_ice_snow = `Ice & Snow_area_sqmi` / area_sqmi,
-    pct_shrubland = Shrubland_area_sqmi / area_sqmi,
-    pct_water = Water_area_sqmi / area_sqmi,
-    pct_wetlands = Wetlands_area_sqmi / area_sqmi
-  ) %>%
-  ungroup()
-
-# create gt table of changes between 2009-2023
-st_counties %>%
-  
-```
-
-```{r land_cover_change_analysis, message=F, warning=F, cache=T, results = FALSE}
-# load reclassified 2009 and 2023 NLCD rasters and 
-# resample nlcd.2023 to ensure alignment
-nlcd.2009 <- nlcd_stack.reclass$`2009`
-nlcd.2023 <- nlcd_stack.reclass$`2023` %>% resample(., nlcd.2009, method = 'near')
-
-# stack the two reclassified rasters
-lc_chg_stack <- c(nlcd.2009, nlcd.2023)
-
-# compute transitions: old class * 10 + new class
-# pixel went from 3 to 7 between the 2 years => value is 37
-# if no change => NA
-change_map <- lapp(
-  lc_chg_stack, fun = function(old, new){
-    return(ifelse(old != new, old * 10 + new, 0))
-})
-
-# convert to dataframe
-change_df <- as.data.frame(change_map, xy = TRUE)
-colnames(change_df)[3] <- 'transition_code'
-
-# assign labels
-change_df$transition_label <- sapply(change_df$transition_code, decode_transition)
-
-# class codes and labels dataframe
-lc_classes <- data.frame(
-  class = 0:9,
-  label = c('Other or Unknown', 'Developed', 'Forest', 'Shrubland', 'Grassland', 'Agriculture',
-            'Wetlands', 'Ice & Snow', 'Water', 'Barren')
-)
-
-# decode transitions
-transitions <- unique(change_df$transition_code)
-
-# get unique transition labels, then add them along with 
-# their transitions to a dataframe
-transition_labels <- unique(change_df$transition_label)
-transitions_df <- data.frame(Code = transitions, Transition = transition_labels)
-
-# move No Change to the front of the list to make it easier to change color
-transition_labels <- c('No Change', setdiff(transition_labels, 'Other or Unknown → Other or Unknown'))
-
-# get distinct colors for each transition type
-set.seed(123)
-colors <- c('grey93', sample(colors(distinct = TRUE), length(transition_labels) - 1))
-
-# create land cover change map
-lc_chg_map <-
-  ggplot() +
-    geom_raster(data = change_df, aes(x = x, y = y, fill = transition_label)) +
-    geom_sf(data = study_counties, fill = NA, color = 'black', size = 0.3) +
-    scale_fill_manual(values = colors, name = NA) +
-    coord_sf(expand = FALSE) +
-    labs(title = 'Land Cover Change in NY Southern Tier (2009 → 2023)',
-         caption = 'Only showing pixels where land cover class changed',
-         x = 'Longitude', y = 'Latitude') +
-    theme_map() +
-    theme(legend.position = 'bottom',
-          legend.text = element_text(size = 5),
-          legend.title = element_blank()) +
-    guides(fill = guide_legend(ncol = 4)) +
-    annotation_scale(location = 'br', width_hint = 0.2, pad_y = unit(-0.5, 'cm'))
-
-lc_chg_map
-```
-
 ## Logit Mixed-Effects Model Using glmmTMB
 
 There are 15,060 observations in the dataset, which represent the 1,004 uniform block groups across a 15-year period. The model predicts the distressed status of a block group given the scaled predictors (population density, unemployment rate, spatially lagged unemployment rate, average rent, divorced rate, and percent developed), while incorporating a categorical time period variable (year_group) and taking into account the fact that some block groups may be inherently more or less at risk than average through the random intercepts for each individual block group.
@@ -1022,11 +899,21 @@ model_glmm <- glmmTMB(
 )
 ```
 
+The model can be expressed in mathematical terms as:
+
+![Distress presence predictive logit mixed-effects model](imgs/mode_equation.png){fig-alt="Distress presence predictive logit mixed-effects model."}
+
+Where:
+* β~0~: fixed intercept
+* β~1~,…,β~6~: fixed-effect coefficients
+* γ~k~γ~k~: fixed effects for year group (excluding the reference group)
+* u~i~: random intercept for block group ii (GEOID)
+
 Before interpretation and result analysis can be conducted, various diagnostic tests must be completed to ensure model stability and fit.
 
 ### Diagnostic Testing
 
-```{r}
+```{r diagnostic_testing, message = FALSE, warning = FALSE, cache = TRUE}
 # residual diagnostics by simulating residuals to check for
 # uniformity, outliers, non-linearity, and heterscedasticity
 
@@ -1115,7 +1002,7 @@ fixed_effects <-
     Odds_Ratio = odds_ratios,
     CI_Lower = lower_ci,
     CI_Upper = upper_ci,
-    p_value = summary(model_lag)$coefficients$cond[, 'Pr(>|z|)']
+    p_value = summary(model_glmm)$coefficients$cond[, 'Pr(>|z|)']
   )
 
 # odds ratio table
@@ -1255,16 +1142,16 @@ ranef_data <-
 st_bgs.ranef <-
   st_bgs_all %>%
   distinct(GEOID, .keep_all = TRUE) %>%
-  left_join(ranef_data, by = 'GEOID') %>%
-  mutate(region = sapply(county, get_region)) %>%
-  relocate(region, .after = county)
+  left_join(ranef_data, by = 'GEOID')
+  #mutate(region = sapply(county, get_region)) %>%
+  #relocate(region, .after = county)
 
 # make map of random effects to see which aras have a higher unexplained risk of
 # being distressed due to reasons not measured in the model
 ranef_map <-
   ggplot() +
   geom_sf(data = st_bgs.ranef, aes(fill = random_intercept), color = NA) +
-  geom_sf_text(data = nys_cities, aes(label = NAME), 
+  geom_sf_text(data = st_cities, aes(label = NAME), 
                color = 'black', angle = 22.5, size = 2.8) +
   geom_sf_text(data = st_civil %>% filter(NAME %in% c("Alfred", "Bath", "Cooperstown", "Watkins Glen", "Hammondsport")), aes(label = NAME), color = 'black', angle = -22.5, size = 2) +
   scale_fill_distiller(
