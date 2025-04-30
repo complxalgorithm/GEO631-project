@@ -1,5 +1,5 @@
 ---
-title: "Assessing Distress Risk of New York's Southern Tier Using Socioeconomic Indicators and Land Cover Changes (2009-2023)"
+title: "Mapping the Margins: A Block Group-Level Analysis of Unexplained Economic Distress in New York’s Southern Tier (2009-2023)"
 author: Stephen C. Sanders
 date: today
 date-format: long
@@ -40,8 +40,7 @@ The analysis looked at various socioeconomic variables along with land cover cla
 
 Census data was pulled for years between 2009 and 2023. All block group-level data was gathered using the [ipumsr](https://cran.r-project.org/web/packages/ipumsr/index.html) package, and all of it originally came from American Community Survey (ACS) 5-year estimates housed by the [NHGIS](https://www.nhgis.org/) in its [IPUMS](https://www.ipums.org/) collection. For distressed status classification, some country-level data for 2009 and 2010 was pulled using the [tidycensus](https://walker-data.com/tidycensus/) package, while the rest of it had to be sourced from governmental reports and news releases since ACS data may not have been readily available for this year at the country-level. Block group-level data was aggregated at the county-level to view changes in these socioeconomic indicators and land cover.
 
-Primary land cover data for years between 2008 and 2023 come from the [Multi-Resolution Land Characteristics Consortium](https://www.mrlc.gov/data/project/annual-nlcd)'s National Land Cover Database and were downloaded programmatically from their [Data page](https://www.mrlc.gov/data?f[0]=category%3ALand%20Cover). This data was processed using the [terra](https://rspatial.github.io/terra/) package.
-
+National land cover data for years between 2008 and 2023 come from the [Multi-Resolution Land Characteristics Consortium](https://www.mrlc.gov/data/project/annual-nlcd)'s National Land Cover Database and were downloaded programmatically from their [Data page](https://www.mrlc.gov/data?f[0]=category%3ALand%20Cover).
 
 ## Processing Methods
 
@@ -54,6 +53,7 @@ As mentioned previously, the methodology used to determine distressed status of 
 
 Since median family incomes cannot be appropriately interpolated, average family income at the national level was used to determine distressed status of each block group rather than the median.
 
+Land cover data was processed using the [terra](https://rspatial.github.io/terra/) package. All land cover classifications were grouped into 9 groups (including Developed, Agriculture, Forest, etc.). Zonal statistics were calculated for each class within each block group, and the coverage percentage of each class was calculated for each block group. Developed land ultimately became the only land cover classification that was considered in the predictive model.
 
 ## Model Using glmmTMB
 
@@ -74,6 +74,9 @@ The [tidyverse](https://www.tidyverse.org/) collection of packages was primarily
 # Data Gathering and Processing
 
 ```{r libraries, message=F, warning=F}
+devtools::install_github("yutannihilation/ggsflabel")
+library(ggsflabel)
+
 # load necessary libraries
 library(tidyverse)
 library(tidycensus)
@@ -95,7 +98,7 @@ library(spdep)
 #library(ggeffects)
 #library(emmeans)
 #library(performance)
-library(tidyterra)
+#library(tidyterra)
 library(cowplot)
 library(ggspatial)
 library(gt)
@@ -123,6 +126,7 @@ options(timeout = 500, tigris_use_cache = TRUE)
 data_download_path <- 'data/'
 nhgis_data_dir <- paste(data_download_path, 'nhgis/', sep = '')
 mrlc_data_dir <- paste(data_download_path, 'mrlc/', sep = '')
+boundaries_data_dir <- paste(data_download_path, 'boundaries/', sep = '')
 ```
 
 ## Map of Study Area
@@ -137,8 +141,15 @@ southern_tier_counties = c('Allegany', 'Broome', 'Cattaraugus', 'Chautauqua',
                            'Chemung', 'Chenango', 'Cortland', 'Delaware', 'Otsego', 
                            'Schoharie', 'Schuyler', 'Steuben', 'Tioga', 'Tompkins')
 
-# get study geographies and basemap focused on ny state
+# get study geographies, city and town boundaries, and basemap focused on ny state
 ny_state <- states(cb = TRUE, year = 2020) %>% filter(NAME == 'New York')
+
+st_regions <- list(
+  'West Region' = c('Chautauqua', 'Cattaraugus', 'Allegany'),
+  'Central Region' = c('Steuben', 'Schuyler', 'Chemung'),
+  '8 Region' = c('Tompkins', 'Cortland', 'Tioga', 'Chenango',
+                 'Broome', 'Otsego', 'Schoharie', 'Delaware')
+)
 
 study_counties <- counties(state = 'NY', cb = TRUE, year = 2020) %>%
   filter(NAME %in% southern_tier_counties)
@@ -146,6 +157,21 @@ study_counties <- counties(state = 'NY', cb = TRUE, year = 2020) %>%
 study_tracts <- tracts(state = 'NY', county = southern_tier_counties, cb = TRUE, year = 2020)
 
 base_ny <- basemap_raster(ext = ny_state, map_service = 'carto', map_type = 'light')
+
+st_civil <- 
+  st_read('data/boundaries/NYS_Civil_Boundaries.geojson') %>%
+  filter(COUNTY %in% southern_tier_counties) %>%
+  st_transform(crs = 26918)
+
+st_cities <-
+  st_read('data/boundaries/NYS_City_Boundaries.geojson') %>%
+  filter(COUNTY %in% southern_tier_counties) %>%
+  st_transform(crs = 26918)
+
+st_towns <-
+  st_read('data/boundaries/NYS_Town_Boundaries.geojson') %>%
+  filter(COUNTY %in% southern_tier_counties) %>%
+  st_transform(crs = 26918)
 
 # create study area map
 study_area_map <-
@@ -161,7 +187,7 @@ study_area_map
 
 ## Download and Process All Required Data
 
-ADD SOME TEXT HERE
+Data at the U.S. level is pulled first. This data is used in determining distress status of each block group. Next, block group-level data is pulled and pre-processed.
 
 ### ACS Data
 
@@ -450,6 +476,9 @@ st_bgs <-
   relocate(geometry, .after = last_col())
 st_bgs[is.na(st_bgs)] <- 0
 
+```
+
+```{r distress_vars_plot, message = FALSE, warning = FALSE, cache = TRUE, results = FALSE}
 # create scatter plot for each year of avg family income and pct below poverty
 distressed_vars_plt <-
   st_bgs %>%
@@ -466,16 +495,9 @@ distressed_vars_plt <-
     scale_x_log10()
 
 distressed_vars_plt
-
-# MAKE A BIVARIATE CHLOROPLETH MAP OF THE 2 VARIABLES
-
 ```
 
-Add some text about the plot and map
-
 ### Population-Weighted Areal Interpolation and Distressed Status Determination
-
-Add text here
 
 ```{r pw_areal_interpolation, message=F, warning=F, cache=T}
 # list of county FIPS
@@ -562,7 +584,7 @@ st_bgs_final <-
 
 ### Land Cover Data
 
-This section pertains to downloading and processing national land cover rasters over the entire 14-county study area.  ADD MORE HERE  The interpretation of the land cover images' pixel values and corresponding land cover classes is from the [Multi-Resolution Land Characteristics Consortium](https://www.mrlc.gov/data/type/land-cover).
+This section pertains to downloading and processing national land cover rasters over the entire 14-county study area. The interpretation of the land cover images' pixel values and corresponding land cover classes is from the [Multi-Resolution Land Characteristics Consortium](https://www.mrlc.gov/data/type/land-cover).
 
 #### Land Cover Processing
 
@@ -764,8 +786,6 @@ zonal_stats_full <- bind_rows(zonal_stats)
 
 #### Land Cover Calculations at Block Group Level
 
-Add some text here
-
 ```{r land_cover_calculations, message=F, warning=F, cache=T}
 # calculate total areas of each class for each GEOID in each year,
 # as well as the percent change from the previous year
@@ -811,17 +831,9 @@ st_bgs_all <-
   relocate(geometry, .after = last_col())
 ```
 
-Add some text here
-
 # Results
 
-Add text here
-
-## County-Level Change (2009-2023)
-
-Add some text here
-
-```{r county_distressed_analysis, message=F, warning=F, cache=T}
+```{r county_distressed_analysis, message=F, warning=F, cache=T, results = FA:SE}
 # calculate county-level data
 st_counties <-
   st_bgs_all %>%
@@ -861,13 +873,7 @@ st_counties %>%
   
 ```
 
-## Land Cover Change Analysis
-
-A map of changes between the 2009 and 2023 reclassified NLCD rasters to see what areas changed, and how they changed
-
-Add some text here
-
-```{r land_cover_change_analysis, message=F, warning=F, cache=T}
+```{r land_cover_change_analysis, message=F, warning=F, cache=T, results = FALSE}
 # load reclassified 2009 and 2023 NLCD rasters and 
 # resample nlcd.2023 to ensure alignment
 nlcd.2009 <- nlcd_stack.reclass$`2009`
@@ -933,16 +939,9 @@ lc_chg_map <-
 lc_chg_map
 ```
 
-Add some text
-
 ## Logit Mixed-Effects Model Using glmmTMB
 
-Add some text here
-
-Dependent variable = is_distressed (0 if not distressed, 1 if distressed)
-Independent variables = tot_pop_density + pct_didnt_work_past_yr + lag_pct_didnt_work_past_yr + avg_rent + pct_divorced + pct_developed + factor(year_group) + (1 | GEOID)
-
-There are 15,060 observations in the dataset, which represent the 1,004 uniform block groups across a 15-year period. The model attempts to predict the distressed status of a block group given the scaled predictors.
+There are 15,060 observations in the dataset, which represent the 1,004 uniform block groups across a 15-year period. The model predicts the distressed status of a block group given the scaled predictors (population density, unemployment rate, spatially lagged unemployment rate, average rent, divorced rate, and percent developed), while incorporating a categorical time period variable (year_group) and taking into account the fact that some block groups may be inherently more or less at risk than average through the random intercepts for each individual block group.
 
 ```{r glmmtmb_regression, message=F, warning=F, cache=T}
 # scale quantitative independent variables, then place each observation in a year group,
@@ -1094,10 +1093,6 @@ Overall, the model fits well, the random effects have a reasonable distribution,
 
 ### Fixed Effects
 
-Add some text here
-
-Odds Ratio interpretation
-
 ```{r fixed_effects, message=F, warning=F, cache=T}
 # display summary of model
 summary(model_glmm)
@@ -1244,8 +1239,6 @@ Overall, the model has a prediction accuracy rate of about 95%. However, this is
 
 ### Random Effects (Evaluate Areas with Unexpectedly High Risk of Distress)
 
-Add some text here
-
 ```{r random_effects, message=T, warning=T, cache=T}
 # get ordered unique GEOIDs
 geoid_levels <- unique(model_glmm$frame$GEOID)
@@ -1262,18 +1255,22 @@ ranef_data <-
 st_bgs.ranef <-
   st_bgs_all %>%
   distinct(GEOID, .keep_all = TRUE) %>%
-  left_join(ranef_data, by = 'GEOID')
+  left_join(ranef_data, by = 'GEOID') %>%
+  mutate(region = sapply(county, get_region)) %>%
+  relocate(region, .after = county)
 
 # make map of random effects to see which aras have a higher unexplained risk of
 # being distressed due to reasons not measured in the model
 ranef_map <-
-  ggplot(st_bgs.ranef) +
-  geom_sf(aes(fill = random_intercept), color = NA) +
+  ggplot() +
+  geom_sf(data = st_bgs.ranef, aes(fill = random_intercept), color = NA) +
+  geom_sf_text(data = nys_cities, aes(label = NAME), 
+               color = 'black', angle = 22.5, size = 2.8) +
+  geom_sf_text(data = st_civil %>% filter(NAME %in% c("Alfred", "Bath", "Cooperstown", "Watkins Glen", "Hammondsport")), aes(label = NAME), color = 'black', angle = -22.5, size = 2) +
   scale_fill_distiller(
-    palette = 'RdYlBu',
+    palette = 'RdGy',
     name = 'Random Intercept\n(Log-Odds)',
-    na.value = 'grey80',
-    direction = -1
+    na.value = 'grey80'
   ) +
   labs(
     title = 'Unexplained Distress Risk by Block Group',
@@ -1288,25 +1285,31 @@ A variance of 8.71 and standard deviation of 2.951 in the random effects shows a
 
 The map highlights spatial variation in unexplained distress risk across block groups. Several areas of the Southern Tier exhibit significantly higher baseline distress risk (in red) even after controlling for socioeconomic, demographic, and built environment predictors. This suggests the presence of unmeasured local factors contributing to persistent distress. Conversely, pockets of lower-than-expected risk (in blue) indicate potential resilience factors that buffer against socioeconomic vulnerabilities. These spatial patterns warrant further investigation to identify contextual drivers of distress beyond those captured in the current model.
 
-
-PUT CITY NAMES ON MAP AS WELL AS COUNTY BOUNDARIES
-
-EXPAND A BIT MORE HERE
-
+Most of the larger cities in the Southern Tier (Jamestown, Elmira, and Binghamton) and other urban centers (such as Oneonta) express a particular "urban divide" among its census tracts, where pockets of neighborhoods have lower-than-expected distress risk and others have higher-than-expected distress risk. A vast majority of the lower-risk block groups were more urban in nature. Rural areas in each county exhibited higher-than-expected distress risk, as well as the entirety of the Allegany Indian Reservation.
 
 # Discussion and Conclusions
 
-The inclusion of a spatially lagged unemployment variable highlights significant spatial interdependence in socioeconomic distress. Block groups are not only affected by their internal economic conditions but also by those of their surrounding areas, consistent with theories of spatial spillover and neighborhood effects.
+The model revealed several statistically significant predictors of distress that align with and extend existing literature on rural vulnerability. Notably, the percentage of individuals not working in the past year emerged as a robust predictor, with both a block group’s own unemployment rate and the spatially lagged rate in neighboring areas associated with significantly increased odds of being classified as distressed. This finding underscores the importance of accounting for spatial spillover effects; communities do not exist in isolation, and economic hardship in one area often correlates with, and potentially contributes to, hardship in adjacent areas. The spatial lag term specifically highlights the diffusive nature of socioeconomic stress, validating recent methodological recommendations to include spatial structure in GLMMs (Dormann et al., 2007; Zuur et al., 2009).
 
-The spatial distribution of random intercepts across New York’s Southern Tier reveals substantial unexplained variation in distress risk. Elevated baseline distress in specific block groups—particularly in former industrial centers—suggests that structural and historical factors, not fully captured by current socioeconomic indicators, continue to shape vulnerability. Conversely, some block groups exhibit resilience despite adverse socioeconomic profiles, indicating the presence of unmeasured protective factors. These patterns highlight the importance of considering localized, place-based dynamics in addressing socioeconomic distress within the region.
+In addition, the model identified population density, divorce rate, and urban development intensity as significant positive predictors of distress. These findings complicate conventional narratives that associate urbanization and density with economic opportunity. In the context of the Southern Tier, where many small cities and formerly industrial urban areas have suffered from long-term economic decline, these variables may reflect concentrated disadvantage, aging population and/or infrastructure, and systemic disinvestment. Conversely, higher average rent was associated with slightly lower odds of distress, potentially serving as a proxy for neighborhood stability or housing demand, although the effect was relatively modest.
 
-Other interpolation methods: Interpolating data using population-weighted centroid assignment can contribute to higher absolute differences between original count data and interpolated data, as shown by Hallisey et al. (2017). Combined population and areal weighting could potentially be employed for more accurate variable estimates in the interpolation process.
+The inclusion of year-group fixed effects also confirmed a significant temporal shift: block groups in the 2019–2023 period were far more likely to be classified as distressed, even after accounting for structural and spatial factors. This supports evidence that recent years have exacerbated vulnerability, likely due to COVID-19 disruptions, continued population decline, and limited regional economic diversification.
 
+Despite the strong predictive performance of the model—achieving an accuracy rate of over 95% and a specificity above 98%, some limitations remain. Sensitivity was lower at ~70%, suggesting that a subset of distressed block groups may remain undetected by the model. These false negatives could reflect areas where unmeasured protective factors or data limitations obscure underlying distress. Additionally, spatial autocorrelation remains present in the residuals, indicating that the model may not fully capture all spatial dependencies. Incorporating spatially structured random effects or moving toward spatial error models may be necessary to account for latent clustering in future research.
 
-Improve Sensitivity: An ROC curve analysis to explore different thresholds?
+Moreover, the method of interpolating variables across changing block group boundaries introduces further limitations. This study used population-weighted areal interpolation through centroid assignment which may produce bias in high-variance areas. As Hallisey et al. (2017) note, centroid-based interpolation can contribute to large absolute errors in count data. Future work could explore hybrid approaches, including combined population and areal weighting or dasymetric interpolation using ancillary data like land cover, to enhance spatial accuracy.
 
+By applying the ARC’s Distressed Areas Classification System at the census block group level, this study tested its efficacy in identifying localized socioeconomic vulnerability. While the ARC’s original formulation is effective for broader regional comparisons, it may miss important within-county variation in distress patterns, particularly in geographically and demographically heterogeneous areas like the Southern Tier.
 
-Other distressed classification systems (<https://www.congress.gov/crs-product/IF12074>)
+The results suggest that the ARC's thresholds (67% of national median family income and 150% of the national poverty rate) successfully identify many of the most vulnerable communities. However, the random intercepts in the GLMM, which are interpreted as "unexplained" risk after accounting for observed predictors, revealed significant residual variation across block groups. In other words, certain block groups experienced higher or lower distress risk than would be predicted solely from ARC-defined economic indicators and the model’s covariates.
+
+Mapping these random intercepts revealed both inter-county variation and stark intra-urban disparities. While rural pockets in counties like Allegany, Delaware, and Schuyler exhibited elevated unexplained distress, several cities (including Binghamton, Jamestown, Elmira, and Oneonta) showed a pronounced internal divide. In these cities, some block groups had much higher-than-expected baseline distress risk, while adjacent ones had negative random effects, indicating lower-than-expected risk. This “urban divide” suggests that distress may concentrate in historically segregated or economically isolated neighborhoods within cities, reinforcing the idea that urban centers in rural regions are not uniformly distressed but fractured by block-level variation in resilience, opportunity, and historical disinvestment.
+
+These observations raise important questions about the adequacy of county-averaged or citywide metrics for targeting interventions. While the ARC’s framework provides a valuable starting point, the findings here emphasize the value of block group-level analysis to surface hidden pockets of vulnerability or resilience that are invisible at coarser scales.
+
+To build on these insights, future analyses should explore additional explanatory variables. Potential protective factors may include social capital (e.g., volunteerism, civic engagement), access to green space, proximity to community services, or the presence of mutual aid networks. Structural variables such as redlining history, credit access, school quality, or broadband availability may also help explain residual variation. Integrating dynamic measures (such as industry closures, pandemic impacts, or population churn) could improve temporal responsiveness. Methodologically, sensitivity could be improved through more flexible classification thresholds, bootstrapped uncertainty intervals, or temporal interaction terms.
+
+This study contributes to a growing body of research calling for more spatially nuanced approaches to understanding and addressing rural economic distress. By integrating predictive modeling with the ARC classification framework, it underscores both the value and the limitations of existing policy tools and demonstrates the power of glmmTMB-based modeling for applied regional analysis. The inclusion of spatial random effects and the visual analysis of residuals provide a roadmap for targeting interventions more precisely, improving both the scientific understanding and the policy relevance of distress classification systems.
 
 # References
 

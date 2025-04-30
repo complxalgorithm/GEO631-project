@@ -128,3 +128,13 @@ decode_transition <- function(class) {
   # create new label describing the transition
   paste(old_label, '→', new_label)
 }
+
+# 
+get_region <- function(county) {
+  for(region in names(st_regions)) {
+    if (county %in% st_regions[[region]]) {
+      return(region)
+    }
+  }
+  return(NA_character_)
+}
