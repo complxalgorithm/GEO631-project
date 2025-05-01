@@ -19,6 +19,8 @@ execute:
   warning: false
 ---
 
+
+
 # Introduction
 
 The Southern Tier of New York, comprising fourteen counties designated as part of Northern Appalachia by the Appalachian Regional Commission (ARC), has long faced significant socioeconomic challenges. These counties have experienced some of the steepest population declines in New York State outside of New York City, driven by prolonged economic restructuring and out-migration (McMahon, 2024; Johnson & Lichter, 2019). Historically reliant on manufacturing, agriculture, and extractive industries, the region has struggled to adapt to post-industrial economic realities. As a result, many communities across the Southern Tier endure persistently high poverty rates and low median incomes relative to national benchmarks (ARC, 2023).
@@ -73,6 +75,8 @@ After successfully estimating the GLMM, the [DHARMa](https://github.com/florianh
 The [tidyverse](https://www.tidyverse.org/) collection of packages was primarily used to easily process large amount of data. The [tigris](https://github.com/walkerke/tigris) package was used directly to pull study counties to create a map of the study area, as well as to pull block-level data for use as the weights in the interpolation process. The [sf](https://r-spatial.github.io/sf/) package helped with processing spatial features, including data pulled from the ACS. The maps and general plots were created using [ggplot2](https://ggplot2.tidyverse.org/). The [gt](https://gt.rstudio.com/) package allowed for the creation of better looking tables.
 
 # Data Gathering and Processing
+
+
 
 ```{r libraries, message=F, warning=F}
 #devtools::install_github("yutannihilation/ggsflabel")
@@ -130,11 +134,15 @@ mrlc_data_dir <- paste(data_download_path, 'mrlc/', sep = '')
 boundaries_data_dir <- paste(data_download_path, 'boundaries/', sep = '')
 ```
 
+
+
 ## Map of Study Area
 
 The map below shows the 14 counties in New York's Southern Tier (Allegany, Broome, Cattaraugus, Chautauqua, Chemung, Chenango, Cortland, Delaware, Otsego, Schoharie, Schuyler, Steuben, Tioga, and Tompkins) and all 1,004 block groups (in 2020-2023).
 
 MAKE A GGPLOT EQUIVALENT TO BELOW MAP
+
+
 
 ```{r study_area_map, message=F, warning=F, echo=F, cache=T}
 # set vector of southern tier counties
@@ -221,6 +229,8 @@ st_map <-
 st_map
 ```
 
+
+
 ## Download and Process All Required Data
 
 Data at the U.S. level is pulled first. This data is used in determining distress status of each block group. Next, block group-level data is pulled and pre-processed.
@@ -230,6 +240,8 @@ Data at the U.S. level is pulled first. This data is used in determining distres
 #### U.S. Data
 
 Create collection of distressed indicator-related data at U.S. level for each year between 2009 and 2023.
+
+
 
 ```{r us_data, message=F, warning=F, cache=T}
 # set US data for 2009 and 2010
@@ -277,11 +289,15 @@ us_data.2011_2023 <-
 us_data <- bind_rows(us_data.2009, us_data.2010, us_data.2011_2023)
 ```
 
+
+
 #### Block Group Data
 
 Define an extract to submit to NHGIS, then download, load, and process data.
 
 ##### Download Set-Up
+
+
 
 ```{r ipums_bg_data_setup, message=F, warning=F, cache=T}
 # set datasets to pull block and block group data from (2009-2023)
@@ -335,7 +351,11 @@ bg_shps <- c('360_blck_grp_2000_tl2009', '360_blck_grp_2010_tl2010',
 #########################################################
 ```
 
+
+
 ##### Load and Process Block Group Data
+
+
 
 ```{r ipums_bg_data_processing, message=F, warning=F, cache=T}
 # get zip files
@@ -520,9 +540,13 @@ st_bgs[is.na(st_bgs)] <- 0
 
 ```
 
+
+
 ### Population-Weighted Areal Interpolation and Distressed Status Determination
 
 Apply population-weighted areal interpolation using centroid assignment to the 2009 - 2019 block group boundaries and ensure that they follow the 2020 boundaries. Estimate all data by applying a scaling factor to each variable after interpolation. Merge all the data together, recombine with 2020-2023 data, then calculate remaining variables.
+
+
 
 ```{r pw_areal_interpolation, message=F, warning=F, cache=T}
 # isolate post-2020 block group data
@@ -601,11 +625,15 @@ st_bgs_final <-
   relocate(geometry, .after = last_col())
 ```
 
+
+
 ### Land Cover Data
 
 This section pertains to downloading and processing national land cover rasters over the entire 14-county study area. The interpretation of the land cover images' pixel values and corresponding land cover classes is from the [Multi-Resolution Land Characteristics Consortium](https://www.mrlc.gov/data/type/land-cover).
 
 #### Land Cover Processing
+
+
 
 ```{r land_cover_setup, message=F, warning=F, echo=F, cache=T, results=F}
 # dissolve counties into single study area polygon
@@ -803,9 +831,13 @@ plan(sequential)
 zonal_stats_full <- bind_rows(zonal_stats)
 ```
 
+
+
 #### Land Cover Calculations at Block Group Level
 
 Calculate the total coverage of each land cover class within each block group in each of the 15 years.
+
+
 
 ```{r land_cover_calculations, message=F, warning=F, echo=F, cache=T, results=F}
 # calculate total areas of each class for each GEOID in each year,
@@ -852,11 +884,15 @@ st_bgs_all <-
   relocate(geometry, .after = last_col())
 ```
 
+
+
 # Results
 
 ## Logit Mixed-Effects Model Using glmmTMB
 
 There are 15,060 observations in the dataset, which represent the 1,004 uniform block groups across a 15-year period. The model predicts the distressed status of a block group given the scaled predictors (population density, unemployment rate, spatially lagged unemployment rate, average rent, divorced rate, and percent developed), while incorporating a categorical time period variable (year_group) and taking into account the fact that some block groups may be inherently more or less at risk than average through the random intercepts for each individual block group (1 | GEOID).
+
+
 
 ```{r glmmtmb_regression, message=F, warning=F, cache=T}
 # scale quantitative independent variables, then place each observation in a year group,
@@ -937,6 +973,8 @@ model_glmm <- glmmTMB(
 )
 ```
 
+
+
 The model can be expressed in mathematical terms as:
 
 ![Distress presence predictive logit mixed-effects model](imgs/model_equation.png){fig-alt="Distress presence predictive logit mixed-effects model."}
@@ -952,6 +990,8 @@ Where:
 Before interpretation and result analysis can be conducted, various diagnostic tests must be completed to ensure model stability and fit.
 
 ### Diagnostic Testing
+
+
 
 ```{r diagnostic_testing, message = FALSE, warning = FALSE, cache = TRUE}
 # residual diagnostics by simulating residuals to check for
@@ -1003,6 +1043,8 @@ moran_test <- moran.test(avg_res$mean_residual, lw)
 print(moran_test)
 ```
 
+
+
 The KS test result for uniformity showed no significant deviation from uniformity (p = 0.108), which suggests expected well-behaved residuals. The dispersion test showed no significant over- or under-dispersion (Disperson = 0.907, p = 0.088), signalling appropriate levels of variance. The outlier test showed no significant outliers (p = 0.252). The zero inflation test showed no evidence of zero inflation (p = 0.472). The QQ plot indicates appropriate residual distribution, and the Residuals vs. Predicted plot shows a slight curve at higher predictions, but is overall flat otherwise. All VIF values used to measure multicollinearity are less than 5, meaning there is no concerning multicollinearity between the predictors.
 
 While significant spatial autocorrelation is present in the residuals (Moran's I = 0.117, p < 0.001), its magnitude is modest and expected given the spatial clustering of socioeconomic distress. In precursor models, Moran's I reached upwards of 0.15. The inclusion of a lagged variable and block group-level random effects substantially reduced spatial dependence compared to these initial models.
@@ -1010,6 +1052,8 @@ While significant spatial autocorrelation is present in the residuals (Moran's I
 Overall, the model fits well, the random effects have a reasonable distribution, and multicollinearity is not a concern. While spatial autocorrelation is present, it is moderate and characteristic of socioeconomic spatial data. There were also attempts at limiting spatial autocorrelation in the form of introducing a spatially lagged covariate, which alleviated some of the autocorrelation. Remaining autocorrelation likely reflects unmeasured spatial processes beyond the scope of this analysis.
 
 ### Fixed Effects
+
+
 
 ```{r fixed_effects, message=F, warning=F, cache=T}
 # display summary of model
@@ -1090,6 +1134,8 @@ ggplot(fixed_effects.plt_df, aes(x = reorder(Predictor, Odds_Ratio), y = Odds_Ra
   )
 ```
 
+
+
 The fit statistics (AIC = 4432.6, BIC = 4508.8, Log-Likelihood = -2206.3) suggests that the model is well-fitting given the number of predictors and amount of data. Since all predictors were scaled (i.e., standardized), interpretations are based on 1 standard deviation changes. Population density, unemployment rate, divorced rate, and percentage developed land cover are all strong, statistically significant predictors of distress and are all associated with a large increased odds that a block group is distressed. The highly increased odds of distress associated with higher population density and percentage developed land cover suggests that denser development and urbanization play a significant role in distress. At the same time, average rent plays the role of a minor yet statistically significant protective factor and would suggest that a block group with higher rent may be more stable. 
 
 While a year group of 2015-2018 is not statistically significant, the strong, statistically significant year group of 2019-2023 shows that a trend of higher distressed odds started after 2018. This would suggest that various socioeconomic factors have gotten worse in the Southern Tier, especially after 2018, leading to increased distress across the region over time and may have been exacerbated (or even caused) by the COVID pandemic.
@@ -1099,6 +1145,8 @@ Distress risk is not just temporal. The spatially lagged covariate of unemployme
 ### Model Prediction Accuracy
 
 A confusion matrix is created from predicted probabilities that are converted to binary predictions, and then the model's overall accuracy, sensitivity, and specificity are calculated.
+
+
 
 ```{r model_accuracy, message=F, warning=F, cache=T}
 # get predicted probabilities
@@ -1153,9 +1201,13 @@ confusion_gt
 metrics_gt
 ```
 
+
+
 Overall, the model has a prediction accuracy rate of about 95%. However, this is mostly due to the model's high level of ability at ruling out distress evidenced by its 98% specificity. Accuracy suffers a bit at predicting block groups that are in distress, where it is ~70% accurate. This suggests that the model is conservative and is cautious about labeling a block group as distressed unless strong evidence is present.
 
 ### Random Effects (Evaluate Areas with Unexpectedly High Risk of Distress)
+
+
 
 ```{r random_effects, message=T, warning=T, cache=T}
 # get ordered unique GEOIDs
@@ -1207,6 +1259,8 @@ ranef_map <-
 
 ranef_map
 ```
+
+
 
 A variance of 8.71 and standard deviation of 2.951 in the random effects show a high level of between-group variability, which suggests that unobserved block group-level factors play a large role in predicting distress in this model. It was thus justified to include the random intercepts to account for this heterogeneity.
 
@@ -1326,3 +1380,4 @@ Journal of Economic Geography, 8(6), 727–757.
 
 * U.S. Geological Survey (USGS). (2008-2023). Annual National Land Cover Data Collection 1 Science Products: U.S. Geological Survey data releases. Data downloaded from: <https://www.mrlc.gov/data?f[0]=category%3ALand%20Cover>
 * Land Cover Classifications from the [Multi-Resolution Land Characteristics Consortium](https://www.mrlc.gov/data/type/land-cover)
+
