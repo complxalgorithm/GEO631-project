@@ -1,0 +1,85 @@
+@page {
+  size: letter; /* Change to A4 if needed */
+  margin: 1in;
+}
+
+/* === BASIC TEXT STYLING === */
+body {
+  font-family: "Georgia", serif;
+  line-height: 1.5;
+  color: #000;
+  background: white;
+}
+
+/* === HIDE NON-PRINT ELEMENTS === */
+nav, .sidebar, footer, .nav-footer, .quarto-sidebar {
+  display: none !important;
+}
+
+/* === HEADINGS — NO BREAK CONTROL === */
+h1, h2, h3, h4, h5, h6,
+h1::after, h2::after, h3::after, h4::after, h5::after, h6::after {
+  break-before: auto !important;
+  break-after: auto !important;
+  page-break-before: auto !important;
+  page-break-after: auto !important;
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}
+
+/* === REMOVE "KEEP TOGETHER" LOGIC === */
+h1 + *, h2 + *, h3 + *,
+h1 + .sourceCode, h2 + .sourceCode, h3 + .sourceCode,
+h1 + pre, h2 + pre, h3 + pre {
+  break-before: auto !important;
+}
+
+/* === CODE BLOCKS — NO FORCED BREAKS === */
+pre, code {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: block;
+}
+
+pre {
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+}
+
+/* === TABLES AND BLOCK ELEMENTS — FREE TO BREAK === */
+table, blockquote, section, figure, .figure, .callout {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+}
+
+/* === IMAGES === */
+img, svg {
+  max-width: 100%;
+  height: auto;
+  page-break-inside: auto !important;
+}
+
+/* === TABLE STYLING === */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  border: 1px solid #444;
+  padding: 4px 8px;
+  text-align: left;
+}
+
+/* === HORIZONTAL RULES — NATURAL BREAKS ONLY === */
+hr {
+  break-before: auto !important;
+  break-after: auto !important;
+  page-break-before: auto !important;
+  page-break-after: auto !important;
+}

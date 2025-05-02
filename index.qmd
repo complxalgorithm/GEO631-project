@@ -5,10 +5,14 @@ date: today
 date-format: long
 format:
   html:
+    #css: pdf-style.css
+    #include-after-body: print.html
     smooth-scroll: true
     toc: true
     toc-location: left
     toc-title: 'Table of Contents'
+    #code-fold: false
+    #code-tools: false
     code-fold: true
     code-tools: true
     embed-resources: true
@@ -142,7 +146,10 @@ boundaries_data_dir <- paste(data_download_path, 'boundaries/', sep = '')
 
 The map below shows the 14 counties in New York's Southern Tier (Allegany, Broome, Cattaraugus, Chautauqua, Chemung, Chenango, Cortland, Delaware, Otsego, Schoharie, Schuyler, Steuben, Tioga, and Tompkins) and all 1,004 block groups (in 2020-2023).
 
-```{r study_area_map, message=F, warning=F, echo=F, cache=T}
+```{r study_area_map, message=F, warning=F, cache=T}
+#| fig-align: center
+#| fig-margin: 0
+
 # set vector of southern tier counties
 southern_tier_counties = c('Allegany', 'Broome', 'Cattaraugus', 'Chautauqua', 
                            'Chemung', 'Chenango', 'Cortland', 'Delaware', 'Otsego', 
@@ -223,9 +230,18 @@ st_map <-
                  angle = -22.5, size = 3.25) +
     labs(title = 'NY Southern Tier Counties and Block Groups',
          subtitle = 'Block Groups as of 2020') +
-    theme_map()
+    theme_map() +
+    theme(
+      plot.margin = margin(10, 10, 10, 10),
+      legend.position = 'none'
+    ) +
+    coord_sf(expand = FALSE)
 
 st_map
+```
+
+```{=latex}
+\newpage
 ```
 
 ## Download and Process All Required Data
@@ -527,6 +543,10 @@ st_bgs[is.na(st_bgs)] <- 0
 
 ```
 
+```{=latex}
+\newpage
+```
+
 ### Population-Weighted Areal Interpolation and Distressed Status Determination
 
 Apply population-weighted areal interpolation using centroid assignment to the 2009 - 2019 block group boundaries and ensure that they follow the 2020 boundaries. Estimate all data by applying a scaling factor to each variable after interpolation. Merge all the data together, recombine with 2020-2023 data, then calculate remaining variables.
@@ -606,6 +626,10 @@ st_bgs_final <-
   relocate(pop_over_16_didnt_work, .after = females_didnt_work) %>%
   relocate(c(county, year), .after = GEOID) %>%
   relocate(geometry, .after = last_col())
+```
+
+```{=latex}
+\newpage
 ```
 
 ### Land Cover Data
@@ -822,6 +846,10 @@ plan(sequential)
 zonal_stats_full <- bind_rows(zonal_stats)
 ```
 
+```{=latex}
+\newpage
+```
+
 #### Land Cover Calculations at Block Group Level
 
 Calculate the total coverage of each land cover class within each block group in each of the 15 years.
@@ -956,6 +984,7 @@ model_glmm <- glmmTMB(
 )
 ```
 
+
 The model can be expressed in mathematical terms as:
 
 ![Distress presence predictive logit mixed-effects model](imgs/model_equation.png){fig-alt="Distress presence predictive logit mixed-effects model."}
@@ -1018,7 +1047,28 @@ avg_res <- data.frame(
 
 # Moran's I test
 moran_test <- moran.test(avg_res$mean_residual, lw)
-print(moran_test)
+
+moran <- data.frame(
+  Moran_I = 0.1170426,
+  Moran_I_Std_Dev = moran_test$statistic,
+  p_value = moran_test$p.value
+)
+
+moran %>%
+  gt() %>%
+  tab_header(
+    title = 'Moran\'s I Test Results'
+  ) %>%
+  #fmt_markdown(columns = c(CI)) %>%
+  cols_label(
+    Moran_I = 'Moran\'s I',
+    Moran_I_Std_Dev = 'Std. Dev.',
+    p_value = 'p_value'
+  ) %>%
+  tab_options(
+    table.font.size = 'large'
+  )
+  
 ```
 
 The KS test result for uniformity showed no significant deviation from uniformity (p = 0.108), which suggests expected well-behaved residuals. The dispersion test showed no significant over- or under-dispersion (Disperson = 0.907, p = 0.088), signalling appropriate levels of variance. The outlier test showed no significant outliers (p = 0.252). The zero inflation test showed no evidence of zero inflation (p = 0.472). The QQ plot indicates appropriate residual distribution, and the Residuals vs. Predicted plot shows a slight curve at higher predictions, but is overall flat otherwise. All VIF values used to measure multicollinearity are less than 5, meaning there is no concerning multicollinearity between the predictors.
@@ -1221,8 +1271,12 @@ ranef_map <-
     subtitle = 'Baseline Distress Risk After Controlling for Predictors'
   ) +
   theme_map() +
-  theme(legend.position = 'bottom') +
-  guides(fill = guide_legend(nrow = 1))
+  theme(
+    plot.margin = margin(10, 10, 10, 10),
+    legend.position = 'bottom'
+  ) +
+  guides(fill = guide_legend(nrow = 1)) +
+  coord_sf(expand = FALSE)
 
 ranef_map
 ```
@@ -1256,6 +1310,10 @@ These observations raise important questions about the adequacy of county-averag
 To build on these insights, future analyses should explore additional explanatory variables. Potential protective factors may include social capital (e.g., volunteerism, civic engagement), access to green space, proximity to community services, or the presence of mutual aid networks. Structural variables such as redlining history, credit access, school quality, or broadband availability may also help explain residual variation. Integrating dynamic measures (such as industry closures, pandemic impacts, or population churn) could improve temporal responsiveness. Methodologically, sensitivity could be improved through more flexible classification thresholds, bootstrapped uncertainty intervals, or temporal interaction terms.
 
 This study contributes to a growing body of research calling for more spatially nuanced approaches to understanding and addressing rural economic distress. By integrating predictive modeling with the ARC classification framework, it underscores both the value and the limitations of existing policy tools and demonstrates the power of glmmTMB-based modeling for applied regional analysis. The inclusion of spatial random effects and the visual analysis of residuals provide a roadmap for targeting interventions more precisely, improving both the scientific understanding and the policy relevance of distress classification systems.
+
+```{=latex}
+\newpage
+```
 
 # References
 
@@ -1318,6 +1376,10 @@ Journal of Economic Geography, 8(6), 727–757.
 26. Walker, K. & Herman, M. (2024). tidycensus: Load US Census Boundary and Attribute Data as 'tidyverse' and 'sf'-Ready Data Frames. R package version 1.6.6. <https://walker-data.com/tidycensus>
 
 27. Zuur, A. F., Ieno, E. N., Walker, N. J., Saveliev, A. A., & Smith, G. M. (2009). Mixed Effects Models and Extensions in Ecology with R. Springer Science & Business Media. <https://doi.org/10.1007/978-0-387-87458-6>
+
+```{=latex}
+\newpage
+```
 
 ## Data Sources and Methodology
 
