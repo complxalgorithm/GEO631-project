@@ -74,10 +74,7 @@ The [tidyverse](https://www.tidyverse.org/) collection of packages was primarily
 
 # Data Gathering and Processing
 
-```{r libraries, message=F, warning=F}
-#devtools::install_github("yutannihilation/ggsflabel")
-#library(ggsflabel)
-
+```{r libraries, message=F, warning=F, echo=F}
 # load necessary libraries
 library(tidyverse)
 library(tidycensus)
@@ -98,7 +95,6 @@ library(spdep)
 library(tidyterra)
 library(cowplot)
 library(ggspatial)
-library(ggrepel)
 library(gt)
 library(RColorBrewer)
 library(gridExtra)
@@ -109,7 +105,9 @@ library(knitr)
 
 source('R/funcs.R')
 
-knitr::opts_chunk$set(echo=TRUE)  # cache the results for quick compiling
+knitr::opts_chunk$set(echo = TRUE, # cache the results for quick compiling
+                      fig.width = unit(18, 'cm'),
+                      fig.height = unit(11, 'cm'))
 
 # pull in api tokens
 census_token = Sys.getenv("CENSUS_TOKEN")
@@ -133,8 +131,6 @@ boundaries_data_dir <- paste(data_download_path, 'boundaries/', sep = '')
 ## Map of Study Area
 
 The map below shows the 14 counties in New York's Southern Tier (Allegany, Broome, Cattaraugus, Chautauqua, Chemung, Chenango, Cortland, Delaware, Otsego, Schoharie, Schuyler, Steuben, Tioga, and Tompkins) and all 1,004 block groups (in 2020-2023).
-
-MAKE A GGPLOT EQUIVALENT TO BELOW MAP
 
 ```{r study_area_map, message=F, warning=F, echo=F, cache=T}
 # set vector of southern tier counties
@@ -162,7 +158,8 @@ study_bgs <-
   filter(COUNTYFP %in% county_fips)
 
 # get basemap of NY
-base_ny <- basemap_raster(ext = ny_state, map_service = 'carto', map_type = 'light')
+base_ny <- basemap_raster(ext = ny_state, map_service = 'carto', 
+                          map_type = 'light', verbose = FALSE)
 
 # get villages and cities
 st_civil <- 
@@ -213,7 +210,7 @@ st_map <-
     geom_sf_text(data = cities, aes(label = NAME), 
                  angle = 22.5, size = 4) +
     geom_sf_text(data = civil, aes(label = NAME), 
-                 angle = -22.5, size = 2.75) +
+                 angle = -22.5, size = 3.25) +
     labs(title = 'NY Southern Tier Counties and Block Groups',
          subtitle = 'Block Groups as of 2020') +
     theme_map()
@@ -607,7 +604,7 @@ This section pertains to downloading and processing national land cover rasters 
 
 #### Land Cover Processing
 
-```{r land_cover_setup, message=F, warning=F, echo=F, cache=T, results=F}
+```{r land_cover_setup, message=F, warning=F, cache=T}
 # dissolve counties into single study area polygon
 st_full_study_area <- st_bgs_final %>% filter(year == 2023) %>% st_union()
 
@@ -648,8 +645,17 @@ nlcd_wrapped <- lapply(lc_yrs, function(yr) {
   tryCatch({
     # load raster, then crop and mask to southern tier study area
     r <- rast(lc_rast)
-    r_crop <- terra::crop(r, vect(st_transform(st_full_study_area, crs = st_crs(r))))
-    r_mask <- terra::mask(r_crop, vect(st_transform(st_full_study_area, crs = st_crs(r))))
+    r_crop <- 
+      terra::crop(
+        r, 
+        vect(st_transform(st_full_study_area, crs = st_crs(r))),
+        progress = 0
+    )
+    r_mask <- terra::mask(
+      r_crop, 
+      vect(st_transform(st_full_study_area, crs = st_crs(r))),
+      progress = 0
+    )
     
     # add year as name of masked raster
     names(r_mask) <- paste('NLCD_', as.character(yr), sep = '')
@@ -657,7 +663,7 @@ nlcd_wrapped <- lapply(lc_yrs, function(yr) {
     # return wrapped, masked raster
     return(
       wrap(
-        project(r_mask, crs(as_spatvector(st_bgs_final)))
+        project(r_mask, crs(as_spatvector(st_bgs_final)), progress = 0)
       )
     )
   }, error = function(e) {
@@ -715,7 +721,8 @@ reclassed_labels <- c(
 )
 
 # apply reclassification across the whole stack
-nlcd_stack.reclass <- classify(nlcd_stack, rcl = lc_type_reclass, others = NA)
+nlcd_stack.reclass <- classify(nlcd_stack, rcl = lc_type_reclass, 
+                               others = NA, progress = 0)
 
 ################################################
 # RUN THE FIRST TIME, THEN RE-COMMENT OUT AFTER
@@ -757,13 +764,15 @@ zonal_stats <- future_lapply(lc_yrs, function(yr) {
    # load reclassified nlcd raster for year and project
   lc <- project(
     rast(paste(mrlc_data_dir, '/nlcd_', as.character(yr), '_reclass.tif', sep = '')),
-    'EPSG:5070'
+    'EPSG:5070',
+    progress = 0
   )
   
   # extract counts of each class per tract
   z <- terra::extract(
     lc, vect(bgs_yr),
-    fun = function(x, ...) table(factor(x, levels = 1:9))
+    fun = function(x, ...) table(factor(x, levels = 1:9)),
+    progress = 0
   ) %>% 
     st_drop_geometry() %>%
     as.data.frame()
@@ -807,7 +816,7 @@ zonal_stats_full <- bind_rows(zonal_stats)
 
 Calculate the total coverage of each land cover class within each block group in each of the 15 years.
 
-```{r land_cover_calculations, message=F, warning=F, echo=F, cache=T, results=F}
+```{r land_cover_calculations, message=F, warning=F, cache=T}
 # calculate total areas of each class for each GEOID in each year,
 # as well as the percent change from the previous year
 # fill all null values
@@ -942,12 +951,11 @@ The model can be expressed in mathematical terms as:
 ![Distress presence predictive logit mixed-effects model](imgs/model_equation.png){fig-alt="Distress presence predictive logit mixed-effects model."}
 
 Where:
-::: {}
-* β~0~: fixed intercept
-* β~1~,…,β~6~: fixed-effect coefficients
-* γ~k~γ~k~: fixed effects for year group (excluding the reference group)
-* u~i~: random intercept for block group ii (GEOID)
-:::
+
+* β~0~        -> fixed intercept
+* β~1~,…,β~6~ -> fixed-effect coefficients
+* γ~k~γ~k~    -> fixed effects for year group (excluding the reference group)
+* u~i~        -> random intercept for block group ii (GEOID)
 
 Before interpretation and result analysis can be conducted, various diagnostic tests must be completed to ensure model stability and fit.
 
@@ -1012,9 +1020,6 @@ Overall, the model fits well, the random effects have a reasonable distribution,
 ### Fixed Effects
 
 ```{r fixed_effects, message=F, warning=F, cache=T}
-# display summary of model
-#summary(model_glmm)
-
 # extract fixed effects
 fixef_vals <- fixef(model_glmm)$cond
 odds_ratios <- exp(fixef_vals)
@@ -1075,19 +1080,23 @@ fixed_effects.plt_df <-
   )
 
 # plot fixed effects with confidence intervals and significance
-ggplot(fixed_effects.plt_df, aes(x = reorder(Predictor, Odds_Ratio), y = Odds_Ratio)) +
-  geom_point(aes(color = Significance), size = 3) +
-  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper, color = Significance), width = 0.2) +
-  geom_hline(yintercept = 1, linetype = 'dashed', color = 'red') +
-  scale_y_log10() + # log scale for more condense plot
-  coord_flip() +
-  labs(
-    title = 'Odds Ratios with 95% Confidence Intervals',
-    subtitle = 'Logit Mixed-Effects Model (glmmTMB) with Spatial Lag',
-    x = 'Predictor',
-    y = 'Odds Ratio (log scale)',
-    color = 'Significance'
-  )
+fixed_effects_plt <-
+  ggplot(fixed_effects.plt_df, aes(x = reorder(Predictor, Odds_Ratio), y = Odds_Ratio)) +
+    geom_point(aes(color = Significance), size = 3) +
+    geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper, color = Significance), 
+                  width = 0.2) +
+    geom_hline(yintercept = 1, linetype = 'dashed', color = 'red') +
+    scale_y_log10() + # log scale for more condense plot
+    coord_flip() +
+    labs(
+      title = 'Odds Ratios with 95% Confidence Intervals',
+      subtitle = 'Logit Mixed-Effects Model (glmmTMB) with Spatial Lag',
+      x = 'Predictor',
+      y = 'Odds Ratio (log scale)',
+      color = 'Significance'
+    )
+
+fixed_effects_plt
 ```
 
 The fit statistics (AIC = 4432.6, BIC = 4508.8, Log-Likelihood = -2206.3) suggests that the model is well-fitting given the number of predictors and amount of data. Since all predictors were scaled (i.e., standardized), interpretations are based on 1 standard deviation changes. Population density, unemployment rate, divorced rate, and percentage developed land cover are all strong, statistically significant predictors of distress and are all associated with a large increased odds that a block group is distressed. The highly increased odds of distress associated with higher population density and percentage developed land cover suggests that denser development and urbanization play a significant role in distress. At the same time, average rent plays the role of a minor yet statistically significant protective factor and would suggest that a block group with higher rent may be more stable. 
@@ -1184,9 +1193,9 @@ ranef_map <-
   geom_sf(data = st_bgs.ranef, aes(fill = random_intercept), color = NA) +
   geom_sf(data = st_full_study_area, color= 'grey80', fill = NA, linewidth = 0.1) +
   geom_sf_text(data = cities, aes(label = NAME), 
-                 angle = -22.5, size = 3) +
+                 angle = 22.5, size = 3.75) +
   geom_sf_text(data = civil, aes(label = NAME), 
-                 angle = 22.5, size = 2.25) +
+                 angle = -22.5, size = 3) +
   scale_fill_gradientn(
     colors = c('darkblue', 'white', 'red'),
     values = rescale(c(min(st_bgs.ranef$random_intercept), -3, 
