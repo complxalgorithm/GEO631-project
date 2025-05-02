@@ -14,6 +14,16 @@ format:
     embed-resources: true
     self-contained-math: true
     page-layout: full
+  pdf:
+    pdf-engine: xelatex
+    documentclass: report
+    papersize: letter
+    colorlinks: true
+    toc: true
+    toc-title: 'Table of Contents'
+    number-sections: true
+    number-depth: 2
+    highlight-style: github
 execute:
   message: false
   warning: false
@@ -955,7 +965,7 @@ Where:
 * β~0~        -> fixed intercept
 * β~1~,…,β~6~ -> fixed-effect coefficients
 * γ~k~γ~k~    -> fixed effects for year group (excluding the reference group)
-* u~i~        -> random intercept for block group ii (GEOID)
+* u~i~        -> random intercept for block group i (GEOID)
 
 Before interpretation and result analysis can be conducted, various diagnostic tests must be completed to ensure model stability and fit.
 
@@ -1221,7 +1231,7 @@ A variance of 8.71 and standard deviation of 2.951 in the random effects show a 
 
 The map highlights spatial variation in unexplained distress risk across block groups. Several areas of the Southern Tier exhibit significantly higher baseline distress risk (in red) even after controlling for socioeconomic, demographic, and built environment predictors. This suggests the presence of unmeasured local factors contributing to persistent distress. Conversely, pockets of lower-than-expected risk (in blue) indicate potential resilience factors that buffer against socioeconomic vulnerabilities. These spatial patterns warrant further investigation to identify contextual drivers of distress beyond those captured in the current model, as well as methods and policy implementations that could potentially offset the effects of poverty, unemployment rate, and other socioeconomic conditions.
 
-Most of the larger cities in the Southern Tier (Binghamton, Jamestown, and Elmira) and other urban centers (such as Oneonta and Olean) express a particular "urban divide" among its census tracts, where pockets of neighborhoods have lower-than-expected distress risk and others have higher-than-expected distress risk. A vast majority of the lower-risk block groups were more urban in nature. Rural areas in each county exhibited higher-than-expected distress risk, including the entirety of the Allegany Indian Reservation centered around the small but vulnerable urban core of Salamanca.
+Most of the larger cities in the Southern Tier (Binghamton, Jamestown, and Elmira) and other urban centers (such as Oneonta and Olean) express a particular "urban divide" among its census tracts, where pockets of neighborhoods have lower-than-expected distress risk and others have higher-than-expected distress risk. There is also an urban/suburban divide between more stable suburban block groups and socioeconomically vulnerable urban block groups. A vast majority of the lower-risk block groups were more urban or suburban in nature. Rural areas in each county exhibited higher-than-expected distress risk, including the entirety of the Allegany Indian Reservation centered around the small but vulnerable urban core of Salamanca.
 
 # Discussion and Conclusions
 
@@ -1301,7 +1311,7 @@ Journal of Economic Geography, 8(6), 727–757.
 
 23. Thiede, B. C., Lichter, D. T., & Slack, T. (2018). Working, but poor: The good life in rural America? Journal of Rural Studies, 59, 183–193. <https://doi.org/10.1016/j.jrurstud.2016.02.007>
 
-24. U.S. Geological Survey. (2024). Annual National Land Cover Database (NLCD) Collection 1 Science Products (2008–2023) [Data set]. Multi-Resolution Land Characteristics Consortium (MRLC). <https://www.mrlc.gov/sites/default/files/docs/LSDS-2103%20Annual%20National%20Land%20Cover%20Database%20%28NLCD%29%20Collection%201%20Science%20Product%20User%20Guide%20-v1.0%202024_10_15.pdf>
+24. U.S. Geological Survey. (2024). Annual National Land Cover Database (NLCD) Collection 1 Science Products (2008–2023) [Data set]. Multi-Resolution Land Characteristics Consortium ([MRLC](https://www.mrlc.gov/sites/default/files/docs/LSDS-2103%20Annual%20National%20Land%20Cover%20Database%20%28NLCD%29%20Collection%201%20Science%20Product%20User%20Guide%20-v1.0%202024_10_15.pdf)).
 
 25. Walker, K. (2023). "7.3 Small area time-series analysis," in *Analyzing US Census Data: Methods, Maps, and Models in R*. CRC Press: Boca Raton, Florida, <https://walker-data.com/census-r/spatial-analysis-with-us-census-data.html#small-area-time-series-analysis>
 

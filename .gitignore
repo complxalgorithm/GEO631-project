@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 .rmarkdown
+.pdf
 index_cache/
 index_files/
 data/*
