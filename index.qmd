@@ -18,16 +18,16 @@ format:
     embed-resources: true
     self-contained-math: true
     page-layout: full
-  pdf:
-    pdf-engine: xelatex
-    documentclass: report
-    papersize: letter
-    colorlinks: true
-    toc: true
-    toc-title: 'Table of Contents'
-    number-sections: true
-    number-depth: 2
-    highlight-style: github
+  # pdf:
+  #   pdf-engine: xelatex
+  #   documentclass: report
+  #   papersize: letter
+  #   colorlinks: true
+  #   toc: true
+  #   toc-title: 'Table of Contents'
+  #   number-sections: true
+  #   number-depth: 2
+  #   highlight-style: github
 execute:
   message: false
   warning: false
@@ -84,7 +84,7 @@ After successfully estimating the GLMM, the [DHARMa](https://github.com/florianh
 
 ## Other Methods
 
-The [tidyverse](https://www.tidyverse.org/) collection of packages was primarily used to easily process large amount of data. The [tigris](https://github.com/walkerke/tigris) package was used directly to pull study counties to create a map of the study area, as well as to pull block-level data for use as the weights in the interpolation process. The [sf](https://r-spatial.github.io/sf/) package helped with processing spatial features, including data pulled from the ACS. The maps and general plots were created using [ggplot2](https://ggplot2.tidyverse.org/). The [gt](https://gt.rstudio.com/) package allowed for the creation of better looking tables.
+The [tidyverse](https://www.tidyverse.org/) collection of packages was primarily used to easily process a large amount of data. The [tigris](https://github.com/walkerke/tigris) package was used directly to pull study counties to create a map of the study area, as well as to pull block-level data for use as the weights in the interpolation process. The [sf](https://r-spatial.github.io/sf/) package helped with processing spatial features, including data pulled from the ACS. The maps and general plots were created using [ggplot2](https://ggplot2.tidyverse.org/). The [gt](https://gt.rstudio.com/) package allowed for the creation of better looking tables.
 
 # Data Gathering and Processing
 
@@ -134,12 +134,6 @@ set_ipums_api_key(ipums_token)
 # tell terra not to display progress bars
 options(timeout = 500, tigris_use_cache = TRUE)
 terraOptions(progress = 0)
-
-# set directories in cwd in which to store data
-data_download_path <- 'data/'
-nhgis_data_dir <- paste(data_download_path, 'nhgis/', sep = '')
-mrlc_data_dir <- paste(data_download_path, 'mrlc/', sep = '')
-boundaries_data_dir <- paste(data_download_path, 'boundaries/', sep = '')
 ```
 
 ## Map of Study Area
@@ -149,6 +143,12 @@ The map below shows the 14 counties in New York's Southern Tier (Allegany, Broom
 ```{r study_area_map, message=F, warning=F, cache=T}
 #| fig-align: center
 #| fig-margin: 0
+
+# set directories in cwd in which to store data
+data_download_path <- 'data/'
+nhgis_data_dir <- paste(data_download_path, 'nhgis/', sep = '')
+mrlc_data_dir <- paste(data_download_path, 'mrlc/', sep = '')
+boundaries_data_dir <- paste(data_download_path, 'boundaries/', sep = '')
 
 # set vector of southern tier counties
 southern_tier_counties = c('Allegany', 'Broome', 'Cattaraugus', 'Chautauqua', 
@@ -188,17 +188,6 @@ st_cities <-
   st_read('data/boundaries/NYS_City_Boundaries.geojson', quiet = TRUE) %>%
   filter(COUNTY %in% southern_tier_counties) %>%
   st_transform(crs = 26918)
-
-# # create study area map
-# study_area_map <-
-#   leaflet() %>%
-#   addTiles() %>%
-#   addPolygons(data = st_transform(study_counties, crs = '+proj=longlat +datum=WGS84'),
-#               fillOpacity = 0, label = ~study_counties$NAME) %>%
-#   addPolygons(data = st_transform(study_bgs, crs = '+proj=longlat +datum=WGS84'),
-#               fillOpacity = 0, color = 'black', weight = '0.75')
-# 
-# study_area_map
 
 # filter out certain villages, transform, and get centroids
 civil <- 
@@ -254,7 +243,9 @@ Data at the U.S. level is pulled first. This data is used in determining distres
 
 Create collection of distressed indicator-related data at U.S. level for each year between 2009 and 2023.
 
-```{r us_data, message=F, warning=F, cache=T}
+```{r us_data, message=F, warning=F}
+#| cache: false
+
 # set US data for 2009 and 2010
 us_data.2009 <- data.frame(
   Name = 'United States',
@@ -306,7 +297,9 @@ Define an extract to submit to NHGIS, then download, load, and process data.
 
 ##### Download Set-Up
 
-```{r ipums_bg_data_setup, message=F, warning=F, cache=T}
+```{r ipums_bg_data_setup, message=F, warning=F}
+#| cache: false
+
 # set datasets to pull block and block group data from (2009-2023)
 datasets <- c('2005_2009_ACS5a', '2006_2010_ACS5a', '2007_2011_ACS5a', 
               '2008_2012_ACS5a', '2009_2013_ACS5a', '2010_2014_ACS5a',
@@ -360,7 +353,9 @@ bg_shps <- c('360_blck_grp_2000_tl2009', '360_blck_grp_2010_tl2010',
 
 ##### Load and Process Block Group Data
 
-```{r ipums_bg_data_processing, message=F, warning=F, cache=T}
+```{r ipums_bg_data_processing, message=F, warning=F}
+#| cache: false
+
 # get zip files
 # CHANGE THIS ACCORDINGLY TO REFLECT YOUR FILE STRUCTURE
 nhgis_bg_data <- list.files(path = nhgis_data_dir, pattern = 'csv', full.names = TRUE)[[4]]
@@ -540,7 +535,6 @@ st_bgs <-
   ) %>%
   relocate(geometry, .after = last_col())
 st_bgs[is.na(st_bgs)] <- 0
-
 ```
 
 ```{=latex}
@@ -551,7 +545,9 @@ st_bgs[is.na(st_bgs)] <- 0
 
 Apply population-weighted areal interpolation using centroid assignment to the 2009 - 2019 block group boundaries and ensure that they follow the 2020 boundaries. Estimate all data by applying a scaling factor to each variable after interpolation. Merge all the data together, recombine with 2020-2023 data, then calculate remaining variables.
 
-```{r pw_areal_interpolation, message=F, warning=F, cache=T}
+```{r pw_areal_interpolation, message=F, warning=F}
+#| cache: false
+
 # isolate post-2020 block group data
 st_bgs.post_2020 <- 
   st_bgs %>%
@@ -903,9 +899,13 @@ st_bgs_all <-
 
 ## Logit Mixed-Effects Model Using glmmTMB
 
-There are 15,060 observations in the dataset, which represent the 1,004 uniform block groups across a 15-year period. The model predicts the distressed status of a block group given the scaled predictors (population density, unemployment rate, spatially lagged unemployment rate, average rent, divorced rate, and percent developed), while incorporating a categorical time period variable (year_group) and taking into account the fact that some block groups may be inherently more or less at risk than average through the random intercepts for each individual block group (1 | GEOID).
+There are 15,060 observations in the dataset, which represent the 1,004 uniform block groups across a 15-year period. The model predicts the distressed status of a block group given the scaled predictors (population density, unemployment rate, spatially lagged unemployment rate, average rent, divorced rate, and percent developed), while incorporating a categorical time period variable (year_group) and taking into account the fact that some block groups may be inherently more or less at risk than average through the random intercepts for each individual block group (1 | GEOID). The model was trained using a random sample of 80% of the unique 1,004 block group GEOIDs in the study, which amounts to 803 block groups and 12,045 training observations.
 
-```{r glmmtmb_regression, message=F, warning=F, cache=T}
+```{r glmmtmb_regression, message=F, warning=F}
+#| cache: false
+
+set.seed(1234)
+
 # scale quantitative independent variables, then place each observation in a year group,
 # create if_distressed value
 st_bgs.scaled <-
@@ -925,7 +925,7 @@ st_bgs.scaled <-
     pct_developed = scale(pct_developed)[,1],
     year_group = case_when(
       year <= 2013 ~ '2009-2013',
-      year <= 2018 ~ '2015-2018',
+      year <= 2018 ~ '2014-2018',
       TRUE ~ '2019-2023'
     ),
   ) %>%
@@ -970,6 +970,21 @@ st_bgs.scaled_lagged <-
     by = 'GEOID'
   )
 
+# get unique GEOIDs
+unique_geoids <- unique(st_bgs.scaled_lagged$GEOID)
+
+# randomly split GEOIDs into train (80%) and test (20%) sets
+train_geoids <- sample(unique_geoids, size = 0.8 * length(unique(unique_geoids)))
+test_geoids <- setdiff(unique_geoids, train_geoids)
+
+# split data into train and test datasets
+train_data <- st_bgs.scaled_lagged %>% filter(GEOID %in% train_geoids)
+test_data <- st_bgs.scaled_lagged %>% filter(GEOID %in% test_geoids)
+
+# # check
+# n_distinct(train_data$GEOID)
+# n_distinct(test_data$GEOID)
+
 ######################################
 # glmm with template model builder
 # a spatial lag variable (pct_didnt_work_past_yr), 
@@ -979,11 +994,12 @@ st_bgs.scaled_lagged <-
 model_glmm <- glmmTMB(
   is_distressed ~ tot_pop_density + pct_didnt_work_past_yr + lag_pct_didnt_work_past_yr +
     avg_rent + pct_divorced + pct_developed + factor(year_group) + (1 | GEOID),
-  data = st_bgs.scaled_lagged,
+  data = train_data,
   family = binomial(link = 'logit')
 )
-```
 
+#summary(model_glmm)
+```
 
 The model can be expressed in mathematical terms as:
 
@@ -1000,7 +1016,9 @@ Before interpretation and result analysis can be conducted, various diagnostic t
 
 ### Diagnostic Testing
 
-```{r diagnostic_testing, message = FALSE, warning = FALSE, cache = TRUE}
+```{r diagnostic_testing, message = FALSE, warning = FALSE}
+#| cache: false
+
 # residual diagnostics by simulating residuals to check for
 # uniformity, outliers, non-linearity, and heterscedasticity
 
@@ -1026,7 +1044,7 @@ ggplot(data.frame(ranef = ranef_vals[,1]), aes(x = ranef)) +
 vif_check <- lm(
   is_distressed ~ tot_pop_density + pct_didnt_work_past_yr + lag_pct_didnt_work_past_yr +
     avg_rent + pct_divorced + pct_developed + factor(year_group),
-  data = st_bgs.scaled_lagged
+  data = train_data
 )
 
 vif(vif_check)
@@ -1035,21 +1053,36 @@ vif(vif_check)
 # Moran's I (spatial autocorrelation)
 ###
 
+# 
+train_bgs <- train_data %>% distinct(GEOID, .keep_all = TRUE)
+unique_train_geoids <- unique(train_bgs$GEOID)
+
 # extract residuals and attach GEOID, calculate avg residuals per block group,
 # then ensure order matches spatial weights matrix
 avg_res <- data.frame(
-  GEOID = st_bgs.scaled_lagged$GEOID,
+  GEOID = train_data$GEOID,
   residuals = residuals(model_glmm)
 ) %>%
   group_by(GEOID) %>%
   summarize(mean_residual = mean(residuals, na.rm = TRUE)) %>%
-  arrange(match(GEOID, unique_bgs$GEOID))
+  arrange(match(GEOID, unique_train_geoids))
+
+# get centroids of unique block groups
+centroids_train <- st_centroid(train_bgs)
+coords_train <- st_coordinates(centroids_train)[, 1:2]
+
+# define k-nearest neighbors
+knn_neighbors_train <- knearneigh(coords_train, k = k)
+nb_train <- knn2nb(knn_neighbors_train)
+
+# create spatial weights matrix
+lw_train <- nb2listw(nb_train, style = 'W')
 
 # Moran's I test
-moran_test <- moran.test(avg_res$mean_residual, lw)
+moran_test <- moran.test(avg_res$mean_residual, lw_train)
 
 moran <- data.frame(
-  Moran_I = 0.1170426,
+  Moran_I = moran_test$estimate[[1]],
   Moran_I_Std_Dev = moran_test$statistic,
   p_value = moran_test$p.value
 )
@@ -1063,7 +1096,7 @@ moran %>%
   cols_label(
     Moran_I = 'Moran\'s I',
     Moran_I_Std_Dev = 'Std. Dev.',
-    p_value = 'p_value'
+    p_value = 'p-value'
   ) %>%
   tab_options(
     table.font.size = 'large'
@@ -1071,15 +1104,17 @@ moran %>%
   
 ```
 
-The KS test result for uniformity showed no significant deviation from uniformity (p = 0.108), which suggests expected well-behaved residuals. The dispersion test showed no significant over- or under-dispersion (Disperson = 0.907, p = 0.088), signalling appropriate levels of variance. The outlier test showed no significant outliers (p = 0.252). The zero inflation test showed no evidence of zero inflation (p = 0.472). The QQ plot indicates appropriate residual distribution, and the Residuals vs. Predicted plot shows a slight curve at higher predictions, but is overall flat otherwise. All VIF values used to measure multicollinearity are less than 5, meaning there is no concerning multicollinearity between the predictors.
+The KS test result for uniformity showed no significant deviation from uniformity (p = 0.547), which suggests expected well-behaved residuals. The dispersion test showed no significant over- or under-dispersion (p = 0.08), signalling appropriate levels of variance. The outlier test showed no significant outliers (p = 0.645). The zero inflation test showed no evidence of zero inflation (p = 0.512). The QQ plot indicates appropriate residual distribution, and the Residuals vs. Predicted plot shows a slight curve at higher predictions, but is generally fairly flat otherwise. All VIF values used to measure multicollinearity are less than 5, meaning there is no concerning multicollinearity between the predictors.
 
-While significant spatial autocorrelation is present in the residuals (Moran's I = 0.117, p < 0.001), its magnitude is modest and expected given the spatial clustering of socioeconomic distress. In precursor models, Moran's I reached upwards of 0.15. The inclusion of a lagged variable and block group-level random effects substantially reduced spatial dependence compared to these initial models.
+While significant spatial autocorrelation is present in the residuals (Moran's I = 0.088, p < 0.001), its magnitude is modest and expected given the spatial clustering of socioeconomic distress. In precursor models, Moran's I reached upwards of 0.15. The inclusion of a lagged variable and block group-level random effects substantially reduced spatial dependence compared to these initial models.
 
 Overall, the model fits well, the random effects have a reasonable distribution, and multicollinearity is not a concern. While spatial autocorrelation is present, it is moderate and characteristic of socioeconomic spatial data. There were also attempts at limiting spatial autocorrelation in the form of introducing a spatially lagged covariate, which alleviated some of the autocorrelation. Remaining autocorrelation likely reflects unmeasured spatial processes beyond the scope of this analysis.
 
 ### Fixed Effects
 
-```{r fixed_effects, message=F, warning=F, cache=T}
+```{r fixed_effects, message=F, warning=F}
+#| cache: false
+
 # extract fixed effects
 fixef_vals <- fixef(model_glmm)$cond
 odds_ratios <- exp(fixef_vals)
@@ -1159,25 +1194,28 @@ fixed_effects_plt <-
 fixed_effects_plt
 ```
 
-The fit statistics (AIC = 4432.6, BIC = 4508.8, Log-Likelihood = -2206.3) suggests that the model is well-fitting given the number of predictors and amount of data. Since all predictors were scaled (i.e., standardized), interpretations are based on 1 standard deviation changes. Population density, unemployment rate, divorced rate, and percentage developed land cover are all strong, statistically significant predictors of distress and are all associated with a large increased odds that a block group is distressed. The highly increased odds of distress associated with higher population density and percentage developed land cover suggests that denser development and urbanization play a significant role in distress. At the same time, average rent plays the role of a minor yet statistically significant protective factor and would suggest that a block group with higher rent may be more stable. 
+The fit statistics (AIC = 3595.7, BIC = 3669.7, Log-Likelihood = -1787.8) suggests that the model is well-fitting given the number of predictors and amount of data. Since all predictors were scaled (i.e., standardized), interpretations are based on 1 standard deviation changes. Population density, unemployment rate, divorced rate, and percentage developed land cover are all strong, statistically significant predictors of distress and are all associated with a large increased odds that a block group is distressed. The highly increased odds of distress associated with higher population density and percentage developed land cover suggests that denser development and urbanization play a significant role in distress. At the same time, average rent plays the role of a minor yet statistically significant protective factor and would suggest that a block group with higher rent may be more stable. 
 
-While a year group of 2015-2018 is not statistically significant, the strong, statistically significant year group of 2019-2023 shows that a trend of higher distressed odds started after 2018. This would suggest that various socioeconomic factors have gotten worse in the Southern Tier, especially after 2018, leading to increased distress across the region over time and may have been exacerbated (or even caused) by the COVID pandemic.
+The 2019-2023 year group is statistically significant, which shows that a trend of higher distressed odds started especially after 2018. This would suggest that various socioeconomic factors have gotten worse in the Southern Tier at least since 2018, leading to increased distress across the region over time and may have been exacerbated (or even caused) by the COVID pandemic.
 
 Distress risk is not just temporal. The spatially lagged covariate of unemployment rate is also a strong, significant predictor of distress. It suggests that higher rates of unemployment in neighboring block groups are strongly associated with increased odds of distress in a given block group. More specifically, a 1 standard deviation increase in the spatially lagged unemployment rate is associated with a threefold increase in the odds that a block group is classified as distressed, independent of its own unemployment rate. Even if a block group's own unemployment is more moderate, being surrounded by high-unemployment areas still substantially increases distress risk.
 
 ### Model Prediction Accuracy
 
-A confusion matrix is created from predicted probabilities that are converted to binary predictions, and then the model's overall accuracy, sensitivity, and specificity are calculated.
+A confusion matrix is created from predicted probabilities that are converted to binary predictions, and then the model's overall accuracy, sensitivity, and specificity are calculated by using the remaining 20% of unique block group GEOIDs as test data.
 
-```{r model_accuracy, message=F, warning=F, cache=T}
+```{r model_accuracy, message=F, warning=F}
+#| cache: false
+
 # get predicted probabilities
-pred_probs <- predict(model_glmm, type = 'response')
+pred_probs <- predict(model_glmm, newdata = test_data,
+                      type = 'response', allow.new.levels = TRUE)
 
 # convert probabilities to binary predictions
 pred_class <- ifelse(pred_probs > 0.5, 1, 0)
 
 # create confusion matrix, then extract values
-conf_matrix <- table(Predicted = pred_class, Actual = st_bgs.scaled_lagged$is_distressed)
+conf_matrix <- table(Predicted = pred_class, Actual = test_data$is_distressed)
 
 TN <- conf_matrix[1,1]
 FP <- conf_matrix[2,1]
@@ -1222,11 +1260,13 @@ confusion_gt
 metrics_gt
 ```
 
-Overall, the model has a prediction accuracy rate of about 95%. However, this is mostly due to the model's high level of ability at ruling out distress evidenced by its 98% specificity. Accuracy suffers a bit at predicting block groups that are in distress, where it is ~70% accurate. This suggests that the model is conservative and is cautious about labeling a block group as distressed unless strong evidence is present.
+Overall, the model has a prediction accuracy rate of about 92%. However, this is mostly due to the model's high level of ability at ruling out distress evidenced by its 99% specificity. Accuracy suffers substantially at predicting block groups that are in distress, where it is only ~28% accurate. This suggests that the model is conservative and is extremely cautious about labeling a block group as distressed unless strong evidence is present. The pattern of false negatives is in line with the fact that distressed areas are a bit rare in the data and the model prioritizes minimizing false positives over catching all distress cases.
 
 ### Random Effects (Evaluate Areas with Unexpectedly High Risk of Distress)
 
-```{r random_effects, message=T, warning=T, cache=T}
+```{r random_effects, message=T, warning=T}
+#| cache: false
+
 # get ordered unique GEOIDs
 geoid_levels <- unique(model_glmm$frame$GEOID)
 
@@ -1258,8 +1298,8 @@ ranef_map <-
                  angle = -22.5, size = 3) +
   scale_fill_gradientn(
     colors = c('darkblue', 'white', 'red'),
-    values = rescale(c(min(st_bgs.ranef$random_intercept), -3, 
-                       3, max(st_bgs.ranef$random_intercept))),
+    values = rescale(c(min(st_bgs.ranef$random_intercept, na.rm = T), -3, 
+                       3, max(st_bgs.ranef$random_intercept, na.rm = T))),
     limits = c(min(st_bgs.ranef$random_intercept),
                max(st_bgs.ranef$random_intercept)),
     oob = squish,
@@ -1281,11 +1321,11 @@ ranef_map <-
 ranef_map
 ```
 
-A variance of 8.71 and standard deviation of 2.951 in the random effects show a high level of between-group variability, which suggests that unobserved block group-level factors play a large role in predicting distress in this model. It was thus justified to include the random intercepts to account for this heterogeneity.
+A variance of 8.415 and standard deviation of 2.901 in the random effects show a high level of between-group variability, which suggests that unobserved block group-level factors play a large role in predicting distress in this model. It was thus justified to include the random intercepts to account for this heterogeneity.
 
 The map highlights spatial variation in unexplained distress risk across block groups. Several areas of the Southern Tier exhibit significantly higher baseline distress risk (in red) even after controlling for socioeconomic, demographic, and built environment predictors. This suggests the presence of unmeasured local factors contributing to persistent distress. Conversely, pockets of lower-than-expected risk (in blue) indicate potential resilience factors that buffer against socioeconomic vulnerabilities. These spatial patterns warrant further investigation to identify contextual drivers of distress beyond those captured in the current model, as well as methods and policy implementations that could potentially offset the effects of poverty, unemployment rate, and other socioeconomic conditions.
 
-Most of the larger cities in the Southern Tier (Binghamton, Jamestown, and Elmira) and other urban centers (such as Oneonta and Olean) express a particular "urban divide" among its census tracts, where pockets of neighborhoods have lower-than-expected distress risk and others have higher-than-expected distress risk. There is also an urban/suburban divide between more stable suburban block groups and socioeconomically vulnerable urban block groups. A vast majority of the lower-risk block groups were more urban or suburban in nature. Rural areas in each county exhibited higher-than-expected distress risk, including the entirety of the Allegany Indian Reservation centered around the small but vulnerable urban core of Salamanca.
+Most of the larger cities in the Southern Tier (Binghamton, Jamestown, Ithaca, and Elmira) and other urban centers (such as Oneonta and Olean) express a particular "urban divide" among its census tracts, where pockets of neighborhoods have lower-than-expected distress risk and others have higher-than-expected distress risk. There is also an urban/suburban divide between more stable suburban block groups and socioeconomically vulnerable urban block groups. A vast majority of the higher-risk block groups were urban in nature. A handfull of rural areas in each county exhibited higher-than-expected distress risk, including the entirety of the Allegany Indian Reservation centered around the small but vulnerable urban core of Salamanca. Still, urban cores were significantly more likely to be distressed than rural areas.
 
 # Discussion and Conclusions
 
@@ -1293,21 +1333,19 @@ The model revealed several statistically significant predictors of distress that
 
 In addition, the model identified population density, divorce rate, and urban development intensity as significant positive predictors of distress. These findings complicate conventional narratives that associate urbanization and density with economic opportunity. In the context of the Southern Tier, where many small cities and formerly industrial urban areas have suffered from long-term economic decline, these variables may reflect concentrated disadvantage, aging population and/or infrastructure, and systemic disinvestment. Conversely, higher average rent was associated with slightly lower odds of distress, potentially serving as a proxy for neighborhood stability or housing demand, although the effect was relatively modest.
 
-The inclusion of year-group fixed effects also confirmed a significant temporal shift: block groups in the 2019–2023 period were far more likely to be classified as distressed, even after accounting for structural and spatial factors. This supports evidence that recent years have exacerbated vulnerability, likely due to COVID-19 disruptions, continued population decline, and limited regional economic diversification.
+The inclusion of year-group fixed effects also confirmed a significant temporal shift: block groups in the 2019–2023 period were far more likely to be classified as distressed, even after accounting for structural and spatial factors. This supports evidence that distress risk has especially been increasing in recent years, likely due to COVID-19 disruptions, continued population decline, and limited regional economic diversification.
 
-Despite the strong predictive performance of the model, which achieved an accuracy rate of over 95% and a specificity above 98%, some limitations remain. Sensitivity was lower at ~70%, suggesting that a subset of distressed block groups may remain undetected by the model. These false negatives could reflect areas where unmeasured protective factors or data limitations obscure underlying distress. Additionally, spatial autocorrelation remains present in the residuals, indicating that the model may not fully capture all spatial dependencies. Incorporating spatially structured random effects or moving toward spatial error models may be necessary to account for latent clustering in future research.
+Despite the strong predictive performance of the model, which achieved an accuracy rate of 92% and a specificity above 99%, some limitations remain. Sensitivity was lower at ~28%, suggesting that an overwhelming majority of distressed block groups may remain undetected by the model. These false negatives could reflect areas where unmeasured protective factors or data limitations obscure underlying distress. Additionally, spatial autocorrelation remains present in the residuals, indicating that the model may not fully capture all spatial dependencies. Incorporating spatially structured random effects or moving toward spatial error models may be necessary to account for latent clustering in future research.
 
 Moreover, the method of interpolating variables across changing block group boundaries introduces further limitations. This study used population-weighted areal interpolation through centroid assignment which may produce bias in high-variance areas. As Hallisey et al. (2017) note, centroid-based interpolation can contribute to large absolute errors in count data. Future work could explore hybrid approaches, including combined population and areal weighting or dasymetric interpolation using ancillary data like land cover, to enhance spatial accuracy.
 
-By applying the ARC’s Distressed Areas Classification System at the census block group level, this study tested its efficacy in identifying localized socioeconomic vulnerability. While the ARC’s original formulation is effective for broader regional comparisons, it may miss important within-county variation in distress patterns, particularly in geographically and demographically heterogeneous areas like the Southern Tier.
+By applying the ARC’s Distressed Areas Classification System at the census block group level, this study tested its efficacy in identifying localized socioeconomic vulnerability. While the ARC’s original formulation is effective for broader regional comparisons, it may miss important within-county variation in distress patterns, particularly in geographically and demographically heterogeneous areas like the Southern Tier. The results suggest that the ARC's thresholds alone (67% of national median family income and 150% of the national poverty rate) do not identify many of the most vulnerable communities. The random intercepts in the GLMM, which are interpreted as "unexplained" risk after accounting for observed predictors, revealed significant residual variation across block groups. In other words, certain block groups experienced higher or lower distress risk than would be predicted solely from ARC-defined economic indicators and the model’s covariates.
 
-The results suggest that the ARC's thresholds (67% of national median family income and 150% of the national poverty rate) successfully identify many of the most vulnerable communities. However, the random intercepts in the GLMM, which are interpreted as "unexplained" risk after accounting for observed predictors, revealed significant residual variation across block groups. In other words, certain block groups experienced higher or lower distress risk than would be predicted solely from ARC-defined economic indicators and the model’s covariates.
+Mapping these random intercepts revealed both inter-county variation and stark intra-urban disparities. While rural pockets in counties like Allegany, Delaware, and Schuyler exhibited elevated unexplained distress, several cities (including Binghamton, Ithaca, Jamestown, Elmira, and Oneonta) showed a pronounced internal divide. In these cities, some block groups had much higher-than-expected baseline distress risk, while adjacent ones had negative random effects, indicating lower-than-expected risk. This “urban divide” suggests that distress may concentrate in historically segregated or economically isolated neighborhoods within cities, reinforcing the idea that urban centers in rural regions are not uniformly distressed but fractured by block-level variation in resilience, opportunity, and historical disinvestment. These observations raise important questions about the adequacy of county-averaged or citywide metrics for targeting interventions. While the ARC’s framework provides a valuable starting point, the findings here emphasize the value of block group-level analysis to surface hidden pockets of vulnerability or resilience that are invisible at coarser scales.
 
-Mapping these random intercepts revealed both inter-county variation and stark intra-urban disparities. While rural pockets in counties like Allegany, Delaware, and Schuyler exhibited elevated unexplained distress, several cities (including Binghamton, Jamestown, Elmira, and Oneonta) showed a pronounced internal divide. In these cities, some block groups had much higher-than-expected baseline distress risk, while adjacent ones had negative random effects, indicating lower-than-expected risk. This “urban divide” suggests that distress may concentrate in historically segregated or economically isolated neighborhoods within cities, reinforcing the idea that urban centers in rural regions are not uniformly distressed but fractured by block-level variation in resilience, opportunity, and historical disinvestment.
+To build on these insights, future analyses should explore additional explanatory variables. Potential protective factors may include social capital (e.g., volunteerism, civic engagement), access to green space, proximity to community services, or the presence of mutual aid networks. Structural variables such as redlining history, credit access, school quality, or broadband availability may also help explain residual variation. For instance, changes in volunteerism over time, particularly during crises, offer natural experiments that could be exploited to assess causal effects on community vulnerability. Studies like Makridis and Wu (2021) have demonstrated that counties with greater civic engagement and volunteerism had stronger economic resilience during the COVID-19 pandemic, suggesting shifts in social capital could be causally linked to socioeconomic outcomes. Additionally, the sudden expansion of mutual aid networks during the pandemic provides a quasi-experimental setting to evaluate whether localized increases in social support structures reduced vulnerability. One such study by Xu and Zhang (2025) utilized structural equation modeling to analyze data from participants in mutual aid groups in China during the pandemic. The research found that participation in mutual aid significantly enhanced individuals' subjective well-being. This effect was mediated through increased access to material resources and the expansion of social networks, which in turn boosted self-esteem and self-efficacy. The study highlights the mechanisms by which mutual aid can reduce vulnerability and promote resilience in times of crisis.
 
-These observations raise important questions about the adequacy of county-averaged or citywide metrics for targeting interventions. While the ARC’s framework provides a valuable starting point, the findings here emphasize the value of block group-level analysis to surface hidden pockets of vulnerability or resilience that are invisible at coarser scales.
-
-To build on these insights, future analyses should explore additional explanatory variables. Potential protective factors may include social capital (e.g., volunteerism, civic engagement), access to green space, proximity to community services, or the presence of mutual aid networks. Structural variables such as redlining history, credit access, school quality, or broadband availability may also help explain residual variation. Integrating dynamic measures (such as industry closures, pandemic impacts, or population churn) could improve temporal responsiveness. Methodologically, sensitivity could be improved through more flexible classification thresholds, bootstrapped uncertainty intervals, or temporal interaction terms.
+Integrating dynamic measures—such as industry closures, pandemic impacts, or population churn—could further improve temporal responsiveness and causal interpretation. For example, differences-in-differences designs exploiting the staggered rollout of broadband access across rural areas (Bertschek et al., 2016) could be adapted to assess how changes in structural resources affect economic distress trajectories. Methodologically, sensitivity could be improved through more flexible classification thresholds, bootstrapped uncertainty intervals, or temporal interaction terms. Moving beyond cross-sectional associations to leverage these natural variations would offer stronger evidence on causal pathways and actionable intervention points.
 
 This study contributes to a growing body of research calling for more spatially nuanced approaches to understanding and addressing rural economic distress. By integrating predictive modeling with the ARC classification framework, it underscores both the value and the limitations of existing policy tools and demonstrates the power of glmmTMB-based modeling for applied regional analysis. The inclusion of spatial random effects and the visual analysis of residuals provide a roadmap for targeting interventions more precisely, improving both the scientific understanding and the policy relevance of distress classification systems.
 
@@ -1325,57 +1363,63 @@ This study contributes to a growing body of research calling for more spatially 
 
 3. Barrett, M., Aslebagh, S., Vuong, V., et al. (2023). Spatially resolved air pollution models identify disparities in exposure by socioeconomic status. *European Respiratory Journal*, *62*(67). <https://doi.org/10.1183/13993003.congress-2023.PA1608>
 
-4. Bivand, R. S., & Piras, G. (2015). Comparing implementations of estimation methods for spatial econometrics. Journal of Statistical Software, *63*(18), 1–36. <https://doi.org/10.18637/jss.v063.i18>
+4. Bertschek, I., Briglauer, W., Hüschelrath, K., Kauf, B., & Niebel, T. (2016). The Economic Impacts of Broadband Internet: A Survey. *Review of Network Economics*, *14*(4), 201–227. <https://doi.org/10.1515/rne-2016-0032>
 
-5. Brooks M.E., Kristensen K., van Benthem K.J., et al. (2017). glmmTMB Balances Speed and Flexibility Among Packages for Zero-inflated Generalized Linear Mixed Modeling. *The R Journal*, *9*(2), 378–400. <https://doi.org/doi:10.32614/RJ-2017-066>.
+5. Bivand, R. S., & Piras, G. (2015). Comparing implementations of estimation methods for spatial econometrics. Journal of Statistical Software, *63*(18), 1–36. <https://doi.org/10.18637/jss.v063.i18>
 
-6. Dormann, C. F., McPherson, J. M., Araújo, M. B., et al. (2007). Methods to account for spatial autocorrelation in the analysis of species distributional data: A review. *Ecography*, *30*(5), 609–628. <https://doi.org/10.1111/j.2007.0906-7590.05171.x>
+6. Brooks M.E., Kristensen K., van Benthem K.J., et al. (2017). glmmTMB Balances Speed and Flexibility Among Packages for Zero-inflated Generalized Linear Mixed Modeling. *The R Journal*, *9*(2), 378–400. <https://doi.org/doi:10.32614/RJ-2017-066>.
 
-7. Ellis, G.F., Burk, D., Roberts, F. (2025). ipumsr: An R Interface for Downloading, Reading, and Handling IPUMS Data. R package version 0.8.2, <https://github.com/ipums/ipumsr>, <https://www.ipums.org>, <https://tech.popdata.org/ipumsr/>. 
+7. Dormann, C. F., McPherson, J. M., Araújo, M. B., et al. (2007). Methods to account for spatial autocorrelation in the analysis of species distributional data: A review. *Ecography*, *30*(5), 609–628. <https://doi.org/10.1111/j.2007.0906-7590.05171.x>
 
-8. Flowerdew, R., & Green, M. (1992). Developments in areal interpolation methods and GIS. The Annals of Regional Science, 26(1), 67–78. <https://doi.org/10.1007/BF01581870>
+8. Ellis, G.F., Burk, D., Roberts, F. (2025). ipumsr: An R Interface for Downloading, Reading, and Handling IPUMS Data. R package version 0.8.2, <https://github.com/ipums/ipumsr>, <https://www.ipums.org>, <https://tech.popdata.org/ipumsr/>. 
 
-9. Galili, T., O'Callaghan, A., Sidi, J., & Sievert, C. (2017). heatmaply: an R package for creating interactive cluster heatmaps for online publishing. *Bioinformatics*, *34*(9), 1600-1602. <https://doi.org/10.1093/bioinformatics/btx657>
+9. Flowerdew, R., & Green, M. (1992). Developments in areal interpolation methods and GIS. The Annals of Regional Science, 26(1), 67–78. <https://doi.org/10.1007/BF01581870>
 
-10. Gelman, A. & Hill, J. (2007). Data Analysis Using Regression and Multilevel/Hierarchical Models. Cambridge University Press. https://doi.org/10.1017/CBO9780511790942
+10. Galili, T., O'Callaghan, A., Sidi, J., & Sievert, C. (2017). heatmaply: an R package for creating interactive cluster heatmaps for online publishing. *Bioinformatics*, *34*(9), 1600-1602. <https://doi.org/10.1093/bioinformatics/btx657>
 
-11. Goodchild, M. F., & Lam, N. S. (1980). Areal interpolation: A variant of the traditional spatial problem. *Geo-Processing*, *1*(3), 297-312.
+11. Gelman, A. & Hill, J. (2007). Data Analysis Using Regression and Multilevel/Hierarchical Models. Cambridge University Press. <https://doi.org/10.1017/CBO9780511790942>
 
-12. Gregory, I. N. (2002). The accuracy of areal interpolation techniques: standardising the crosswalk. *Computers, Environment and Urban Systems*, *26*(3), 293-314.
+12. Goodchild, M. F., & Lam, N. S. (1980). Areal interpolation: A variant of the traditional spatial problem. *Geo-Processing*, *1*(3), 297-312. <https://www.researchgate.net/publication/239654534_Areal_Interpolation_A_Variant_of_the_Traditional_Spatial_Problem>
 
-13. Hallisey, E., Tai, E., Berens, A., et al. (2017). Transforming geographic scale: a comparison of combined population and areal weighting to other interpoaltion methods. *International Journal of Health Geographics*, *16*(29). <https://doi.org/10.1186/s12942-017-0102-z>
+13. Gregory, I. N. (2002). The accuracy of areal interpolation techniques: standardising the crosswalk. *Computers, Environment and Urban Systems*, *26*(3), 293-314. <https://www.researchgate.net/publication/223083878_The_accuracy_of_areal_interpolation_techniques_Standardising_19th_and_20th_century_census_data_to_allow_long-term_comparisons>
 
-14. Hartig, F. (2024). DHARMa: Residual Diagnostics for Hierarchical (Multi-Level / Mixed) Regression Models. R package version 0.4.7, <https://github.com/florianhartig/dharma>.
+14. Hallisey, E., Tai, E., Berens, A., et al. (2017). Transforming geographic scale: a comparison of combined population and areal weighting to other interpoaltion methods. *International Journal of Health Geographics*, *16*(29). <https://doi.org/10.1186/s12942-017-0102-z>
 
-15. Hijmans, R. (2025). terra: Spatial Data Analysis. R package version 1.8-6. <https://github.com/rspatial/terra>
+15. Hartig, F. (2024). DHARMa: Residual Diagnostics for Hierarchical (Multi-Level / Mixed) Regression Models. R package version 0.4.7, <https://github.com/florianhartig/dharma>.
 
-16. Johnson, K. M., & Lichter, D. T. (2019). Rural depopulation: Growth and decline processes over the past century. Rural Sociology, 84(1), 3–27. <https://doi.org/10.1111/ruso.12266>
+16. Hijmans, R. (2025). terra: Spatial Data Analysis. R package version 1.8-6. <https://github.com/rspatial/terra>
 
-17. Jokela, M., Batty, G. D., Vahtera, J., Elovainio, M., & Kivimäki, M. (2013).
+17. Johnson, K. M., & Lichter, D. T. (2019). Rural depopulation: Growth and decline processes over the past century. Rural Sociology, 84(1), 3–27. <https://doi.org/10.1111/ruso.12266>
+
+18. Jokela, M., Batty, G. D., Vahtera, J., Elovainio, M., & Kivimäki, M. (2013).
 Socioeconomic inequalities in common mental disorders and psychotherapy treatment in the UK between 1991 and 2009. The British Journal of Psychiatry, 202(2), 115–120. <https://doi.org/10.1192/bjp.bp.111.098863>
 
-18. K C, S., Gyawali, B. R., Lucas, S., Antonious, G. F., Chiluwal, A., & Zourarakis, D. (2024). Assessing Land-Cover Change Trends, Patterns, and Transitions in Coalfield Counties of Eastern Kentucky, USA. *Land*, *13*(9), 1541. <https://doi.org/10.3390/land13091541>
+19. K C, S., Gyawali, B. R., Lucas, S., Antonious, G. F., Chiluwal, A., & Zourarakis, D. (2024). Assessing Land-Cover Change Trends, Patterns, and Transitions in Coalfield Counties of Eastern Kentucky, USA. *Land*, *13*(9), 1541. <https://doi.org/10.3390/land13091541>
 
-19. Ludke, R. L., Obermiller, P. J., & Rademacher, E. W. (2012). Demographic Change in Appalachia: A Tentative Analysis. *Journal of Appalachian Studies*, *18*(1/2), 48–92. <http://www.jstor.org/stable/23337708>
+20. Ludke, R. L., Obermiller, P. J., & Rademacher, E. W. (2012). Demographic Change in Appalachia: A Tentative Analysis. *Journal of Appalachian Studies*, *18*(1/2), 48–92. <http://www.jstor.org/stable/23337708>
 
-20. Manson, S., Schroeder, J., Van Riper, D., et al. (2024). IPUMS National Historical Geographic Information System: Version 19.0 [dataset]. Minneapolis, MN: IPUMS. <http://doi.org/10.18128/D050.V19.0>.
+21. Makridis, C. A. & Wu, C. (2021). How social capital helps communities weather the COVID-19 pandemic. *PLOS ONE*, *16*(1). <https://doi.org/10.1371/journal.pone.0245135>
 
-21. McMahon, E.J. (2024). Eight in 10 New York towns and cities have lost population since 2020. *Empire Center*. <https://www.empirecenter.org/publications/eight-in-10-new-york-towns-and-cities-have-lost-population-since-2020>
+22. Manson, S., Schroeder, J., Van Riper, D., et al. (2024). IPUMS National Historical Geographic Information System: Version 19.0 [dataset]. Minneapolis, MN: IPUMS. <http://doi.org/10.18128/D050.V19.0>.
 
-22. Partridge, M. D., Rickman, D. S., Ali, K., & Olfert, M. R. (2008).
+23. McMahon, E.J. (2024). Eight in 10 New York towns and cities have lost population since 2020. *Empire Center*. <https://www.empirecenter.org/publications/eight-in-10-new-york-towns-and-cities-have-lost-population-since-2020>
+
+24. Partridge, M. D., Rickman, D. S., Ali, K., & Olfert, M. R. (2008).
 Lost in space: Population growth in the American hinterlands and small cities.
 Journal of Economic Geography, 8(6), 727–757.
 <https://doi.org/10.1093/jeg/lbn038>
 
-23. Thiede, B. C., Lichter, D. T., & Slack, T. (2018). Working, but poor: The good life in rural America? Journal of Rural Studies, 59, 183–193. <https://doi.org/10.1016/j.jrurstud.2016.02.007>
+25. Thiede, B. C., Lichter, D. T., & Slack, T. (2018). Working, but poor: The good life in rural America? Journal of Rural Studies, 59, 183–193. <https://doi.org/10.1016/j.jrurstud.2016.02.007>
 
-24. U.S. Geological Survey. (2024). Annual National Land Cover Database (NLCD) Collection 1 Science Products (2008–2023) [Data set]. Multi-Resolution Land Characteristics Consortium ([MRLC](https://www.mrlc.gov/sites/default/files/docs/LSDS-2103%20Annual%20National%20Land%20Cover%20Database%20%28NLCD%29%20Collection%201%20Science%20Product%20User%20Guide%20-v1.0%202024_10_15.pdf)).
+26. U.S. Geological Survey. (2024). Annual National Land Cover Database (NLCD) Collection 1 Science Products (2008–2023) [Data set]. Multi-Resolution Land Characteristics Consortium ([MRLC](https://www.mrlc.gov/sites/default/files/docs/LSDS-2103%20Annual%20National%20Land%20Cover%20Database%20%28NLCD%29%20Collection%201%20Science%20Product%20User%20Guide%20-v1.0%202024_10_15.pdf)).
 
-25. Walker, K. (2023). "7.3 Small area time-series analysis," in *Analyzing US Census Data: Methods, Maps, and Models in R*. CRC Press: Boca Raton, Florida, <https://walker-data.com/census-r/spatial-analysis-with-us-census-data.html#small-area-time-series-analysis>
+27. Walker, K. (2023). "7.3 Small area time-series analysis," in *Analyzing US Census Data: Methods, Maps, and Models in R*. CRC Press: Boca Raton, Florida, <https://walker-data.com/census-r/spatial-analysis-with-us-census-data.html#small-area-time-series-analysis>
 
-26. Walker, K. & Herman, M. (2024). tidycensus: Load US Census Boundary and Attribute Data as 'tidyverse' and 'sf'-Ready Data Frames. R package version 1.6.6. <https://walker-data.com/tidycensus>
+28. Walker, K. & Herman, M. (2024). tidycensus: Load US Census Boundary and Attribute Data as 'tidyverse' and 'sf'-Ready Data Frames. R package version 1.6.6. <https://walker-data.com/tidycensus>
 
-27. Zuur, A. F., Ieno, E. N., Walker, N. J., Saveliev, A. A., & Smith, G. M. (2009). Mixed Effects Models and Extensions in Ecology with R. Springer Science & Business Media. <https://doi.org/10.1007/978-0-387-87458-6>
+29. Xu, A., & Zhang, Y. (2025). The effect and mechanism of mutual aid on the subjective well-being of participants under the COVID-19 pandemic. BMC Psychology, 13, Article 48. https://doi.org/10.1186/s40359-025-02360-5
+
+30. Zuur, A. F., Ieno, E. N., Walker, N. J., Saveliev, A. A., & Smith, G. M. (2009). Mixed Effects Models and Extensions in Ecology with R. Springer Science & Business Media. <https://doi.org/10.1007/978-0-387-87458-6>
 
 ```{=latex}
 \newpage

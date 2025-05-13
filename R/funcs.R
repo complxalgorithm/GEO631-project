@@ -101,7 +101,7 @@ interpolate_data <- function(yr) {
     interpolated[[var]] <- round(interpolated[[var]] * scaling_factor)
   }
   
-  # # display change in tot_pop after interpolation
+  # display change in tot_pop after interpolation
   # print(
   #   tibble(
   #     year = yr,
